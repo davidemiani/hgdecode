@@ -13,14 +13,15 @@ from braindecode.datautil.iterators import get_balanced_batches
 from hgdecode.models import import_model
 
 # Machine Learning
-from hgdecode.binary import BinaryFBCSP
-from hgdecode.multiclass import MultiClassFBCSP
-from hgdecode.multiclass import MultiClassWeightedVoting
+from hgdecode.fbcsprlda import BinaryFBCSP
+from hgdecode.fbcsprlda import FBCSP
+from hgdecode.fbcsprlda import MultiClassWeightedVoting
 
 
-class FBCSPExperiment(object):
+class FBCSPrLDAExperiment(object):
     """
-        A Filter Bank Common Spatial Patterns Experiment.
+        A Filter Bank Common Spatial Patterns with rLDA
+        classification Experiment.
 
         Parameters
         ----------
@@ -174,7 +175,7 @@ class FBCSPExperiment(object):
     def run(self):
         # printing routine start
         print_manager(
-            'TRAINING ROUTINE',
+            'INIT TRAINING ROUTINE',
             'double-dashed',
         )
 
@@ -186,12 +187,12 @@ class FBCSPExperiment(object):
         # creating folds
         print_manager('Creating folds...')
         self.create_folds()
-        print_manager('DONE!!', bottom_return=1)
+        print_manager('DONE!!', 'last')
 
-        # printing the start
-        log.info("Running Training...")
-
-        # creating a BinaryFBCSP instance
+        # running binary FBCSP
+        print_manager("RUNNING BINARY FBCSP rLDA",
+                      'double-dashed',
+                      top_return=1)
         self.binary_csp = BinaryFBCSP(
             cnt=self.cnt,
             clean_trial_mask=self.clean_trial_mask,
@@ -205,20 +206,11 @@ class FBCSPExperiment(object):
             name_to_stop_codes=self.name_to_stop_codes,
             average_trial_covariance=self.average_trial_covariance
         )
-
-        # running it
         self.binary_csp.run()
 
-        # TODO: understand filterbankCSP
-        # TODO: change names and putting robintibor CSP code in the same
-        #  module (so BinaryCSP, FilterbankCSP and MultiClass...)
-        # TODO: once you have decided classes names, updating prints with
-        #  print_manager!! These ones suck!
-
-        # at the very end of the binary CSP experiment...
-        print_manager('')
-        log.info("Filterbank...")
-        self.filterbank_csp = MultiClassFBCSP(
+        # at the very end of the binary CSP experiment, running the real one
+        print_manager("RUNNING FBCSP rLDA", 'double-dashed', top_return=1)
+        self.filterbank_csp = FBCSP(
             binary_csp=self.binary_csp,
             n_features=self.n_selected_features,
             n_filterbands=self.n_selected_filterbands,
@@ -226,14 +218,10 @@ class FBCSPExperiment(object):
             backward_steps=self.backward_steps,
             stop_when_no_improvement=self.stop_when_no_improvement
         )
-
-        # running it
         self.filterbank_csp.run()
 
-        # TODO: understand MultiClassWeightedVoting as well
-
-        # and finally multiclass...
-        log.info("Multiclass...")
+        # and finally multiclass
+        print_manager("RUNNING MULTICLASS", 'double-dashed', top_return=1)
         self.multi_class = MultiClassWeightedVoting(
             train_labels=self.binary_csp.train_labels_full_fold,
             test_labels=self.binary_csp.test_labels_full_fold,
@@ -241,6 +229,7 @@ class FBCSPExperiment(object):
             test_preds=self.filterbank_csp.test_pred_full_fold,
             class_pairs=self.class_pairs)
         self.multi_class.run()
+        print('\n')
 
 
 class DLExperiment(object):

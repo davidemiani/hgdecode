@@ -1,11 +1,14 @@
 <component name="ProjectDictionaryState">
   <dictionary name="dave">
     <words>
+      <w>accs</w>
       <w>arxiv</w>
       <w>asctime</w>
       <w>bandpassed</w>
       <w>bandpassing</w>
       <w>bbci</w>
+      <w>bestfilterband</w>
+      <w>bincsp</w>
       <w>butterworth</w>
       <w>conv</w>
       <w>convolutional</w>
@@ -21,6 +24,8 @@
       <w>filterband</w>
       <w>filterbands</w>
       <w>filterbank</w>
+      <w>filterpair</w>
+      <w>filterwise</w>
       <w>hgdecode</w>
       <w>hyperparameters</w>
       <w>inds</w>

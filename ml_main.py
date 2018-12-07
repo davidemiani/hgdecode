@@ -5,7 +5,7 @@ from collections import OrderedDict
 from hgdecode.utils import create_log
 from hgdecode.utils import print_manager
 from hgdecode.loaders import ml_loader
-from hgdecode.experiments import FBCSPExperiment
+from hgdecode.experiments import FBCSPrLDAExperiment
 
 """
 SETTING PARAMETERS
@@ -95,7 +95,7 @@ for subject_id in subject_ids:
     )
 
     # creating experiment instance
-    exp = FBCSPExperiment(
+    exp = FBCSPrLDAExperiment(
         # signal-related inputs
         cnt,
         clean_trial_mask,
@@ -104,11 +104,11 @@ for subject_id in subject_ids:
         epoch_ival_ms=(-500, 4000),
 
         # bank filter-related inputs
-        min_freq=[0, 10],
-        max_freq=[12, 122],
-        window=[6, 8],
-        overlap=[3, 4],
-        filt_order=3,
+        # min_freq=[0, 10],
+        # max_freq=[12, 122],
+        # window=[6, 8],
+        # overlap=[3, 4],
+        # filt_order=3,
 
         # machine learning parameters
         n_folds=10,

@@ -157,7 +157,7 @@ def load_and_preprocess_data(data_dir,
     # standardize continuous data
     log.info('Standardizing continuous data...')
     cnt = standardize_cnt(cnt)
-    print_manager('DONE!!', bottom_return=1)
+    print_manager('DONE!!', 'last', bottom_return=1)
 
     return cnt, clean_trial_mask, train_len
 
