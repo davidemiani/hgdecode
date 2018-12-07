@@ -3,13 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="12a5c9c3-f719-4063-b578-8ab6a85137ce" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/dictionaries/dave.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/dave.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dl_main.py" beforeDir="false" afterPath="$PROJECT_DIR$/dl_main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hgdecode/binary.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/binary.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hgdecode/classes.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/classes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hgdecode/experiments.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/experiments.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hgdecode/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hgdecode/multiclass.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/multiclass.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -24,24 +19,33 @@
   <component name="FileEditorManager">
     <leaf>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/dl_main.py">
+        <entry file="file://$PROJECT_DIR$/ml_main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="577">
-              <caret line="70" column="30" lean-forward="true" selection-start-line="70" selection-start-column="30" selection-end-line="70" selection-end-column="30" />
+            <state relative-caret-position="-2159">
+              <caret line="4" column="37" lean-forward="true" selection-start-line="4" selection-start-column="37" selection-end-line="4" selection-end-column="37" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/hgdecode/experiments.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="5704">
+              <caret line="323" selection-start-line="323" selection-end-line="323" />
               <folding>
-                <element signature="e#0#21#0" expanded="true" />
+                <element signature="e#18#42#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/hgdecode/models.py">
+        <entry file="file://$PROJECT_DIR$/hgdecode/multiclass.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="621">
-              <caret line="94" column="35" selection-start-line="94" selection-start-column="35" selection-end-line="94" selection-end-column="35" />
+            <state relative-caret-position="634">
+              <caret line="280" column="38" selection-start-line="280" selection-start-column="38" selection-end-line="280" selection-end-column="38" />
               <folding>
-                <element signature="e#0#30#0" expanded="true" />
+                <element signature="e#0#16#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -57,6 +61,8 @@
       <find>dropoutRate</find>
       <find>kernLength</find>
       <find>dropoutType</find>
+      <find>Run feature</find>
+      <find>select_features</find>
     </findStrings>
     <replaceStrings>
       <replace>clean_ival_ms</replace>
@@ -82,6 +88,7 @@
         <option value="$PROJECT_DIR$/hgdecode/experiments.py" />
         <option value="$PROJECT_DIR$/dl_main.py" />
         <option value="$PROJECT_DIR$/hgdecode/models.py" />
+        <option value="$PROJECT_DIR$/hgdecode/multiclass.py" />
       </list>
     </option>
   </component>
@@ -99,7 +106,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -120,6 +126,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -142,7 +149,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.dl_main">
+  <component name="RunManager" selected="Python.ml_main">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="hgdecode" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -169,6 +176,9 @@
       <module name="hgdecode" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -210,9 +220,6 @@
       <module name="hgdecode" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -232,6 +239,9 @@
       <module name="hgdecode" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/hgdecode" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -249,9 +259,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.ml_main" />
         <item itemvalue="Python.dl_main" />
         <item itemvalue="Python.utils" />
-        <item itemvalue="Python.ml_main" />
         <item itemvalue="Python.loaders" />
       </list>
     </recent_temporary>
@@ -268,12 +278,13 @@
       <updated>1544113574642</updated>
       <workItem from="1544113575849" duration="14638000" />
       <workItem from="1544133003645" duration="19384000" />
-      <workItem from="1544154049499" duration="246000" />
+      <workItem from="1544154049499" duration="314000" />
+      <workItem from="1544155250620" duration="1966000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="34268000" />
+    <option name="totallyTimeSpent" value="36302000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -288,7 +299,7 @@
     <frame x="-2" y="50" width="1922" height="2110" extended-state="4" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.18008704" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16974972" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -388,16 +399,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ml_main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="264">
-          <caret line="69" lean-forward="true" selection-start-line="69" selection-end-line="69" />
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/venvs/dlvenv/lib/python3.6/site-packages/braindecode/datautil/trial_segment.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1815">
@@ -456,22 +457,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/hgdecode/experiments.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1545">
-          <caret line="323" selection-start-line="323" selection-end-line="323" />
-          <folding>
-            <element signature="e#18#42#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/hgdecode/utils.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="1595">
           <caret line="100" column="53" lean-forward="true" selection-start-line="100" selection-start-column="53" selection-end-line="100" selection-end-column="53" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hgdecode/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="621">
+          <caret line="94" column="35" selection-start-line="94" selection-start-column="35" selection-end-line="94" selection-end-column="35" />
+          <folding>
+            <element signature="e#0#30#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -486,12 +487,29 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/hgdecode/models.py">
+    <entry file="file://$PROJECT_DIR$/ml_main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="621">
-          <caret line="94" column="35" selection-start-line="94" selection-start-column="35" selection-end-line="94" selection-end-column="35" />
+        <state relative-caret-position="-2159">
+          <caret line="4" column="37" lean-forward="true" selection-start-line="4" selection-start-column="37" selection-end-line="4" selection-end-column="37" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hgdecode/experiments.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5704">
+          <caret line="323" selection-start-line="323" selection-end-line="323" />
           <folding>
-            <element signature="e#0#30#0" expanded="true" />
+            <element signature="e#18#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/hgdecode/multiclass.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="634">
+          <caret line="280" column="38" selection-start-line="280" selection-start-column="38" selection-end-line="280" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#16#0" expanded="true" />
           </folding>
         </state>
       </provider>

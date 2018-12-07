@@ -23,6 +23,7 @@
       <w>filterbank</w>
       <w>hgdecode</w>
       <w>hyperparameters</w>
+      <w>inds</w>
       <w>ival</w>
       <w>keras</w>
       <w>levelname</w>
@@ -32,6 +33,7 @@
       <w>npint</w>
       <w>overcomplete</w>
       <w>pointwise</w>
+      <w>preds</w>
       <w>regularizations</w>
       <w>resample</w>
       <w>resampling</w>

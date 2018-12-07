@@ -6,7 +6,6 @@ from braindecode.datautil.iterators import get_balanced_batches
 from hgdecode.signalproc import concatenate_channels, select_trials
 from hgdecode.lda import lda_train_scaled, lda_apply
 
-
 log = getLogger(__name__)
 
 
@@ -33,6 +32,12 @@ class MultiClassFBCSP(object):
         self.test_feature_full_fold = None
         self.selected_filter_inds = None
         self.selected_filters_per_filterband = None
+        self.selected_features = None
+        self.clf = None
+        self.train_accuracy = None
+        self.test_accuracy = None
+        self.train_pred_full_fold = None
+        self.test_pred_full_fold = None
 
     def run(self):
         self.select_filterbands()
@@ -40,7 +45,6 @@ class MultiClassFBCSP(object):
             log.info("Run feature selection...")
             self.collect_best_features()
             log.info("Done.")
-            # self.select_features()
         else:
             self.collect_features()
         self.train_classifiers()
@@ -147,28 +151,28 @@ class MultiClassFBCSP(object):
                     self.collect_features_for_filter_selection(
                         bin_csp_train_features,
                         selected_filters_per_filt
-                )
+                    )
 
                 # collecting train features full fold
                 self.train_feature_full_fold[fold_i, class_pair_i] = \
                     self.collect_features_for_filter_selection(
                         bin_csp_train_features_full_fold,
                         selected_filters_per_filt
-                )
+                    )
 
                 # collecting test features
                 self.test_feature[fold_i, class_pair_i] = \
                     self.collect_features_for_filter_selection(
                         bin_csp_test_features,
                         selected_filters_per_filt
-                )
+                    )
 
                 # collecting test features full fold
                 self.test_feature_full_fold[fold_i, class_pair_i] = \
                     self.collect_features_for_filter_selection(
                         bin_csp_test_features_full_fold,
                         selected_filters_per_filt
-                )
+                    )
 
                 # saving also the filters selected for this fold and pair
                 self.selected_filters_per_filterband[fold_i, class_pair_i] = \
@@ -199,13 +203,13 @@ class MultiClassFBCSP(object):
                         continue
                     this_filt_per_fb[filt_i] = this_filt_per_fb[filt_i] + 1
                     all_features = \
-                        FilterbankCSP.collect_features_for_filter_selection(
+                        MultiClassFBCSP.collect_features_for_filter_selection(
                             features,
                             this_filt_per_fb
                         )
 
                     # make 5 times cross validation...
-                    test_accuracy = FilterbankCSP.cross_validate_lda(
+                    test_accuracy = MultiClassFBCSP.cross_validate_lda(
                         all_features
                     )
 
@@ -225,12 +229,12 @@ class MultiClassFBCSP(object):
                         continue
                     this_filt_per_fb[filt_i] = this_filt_per_fb[filt_i] - 1
                     all_features = \
-                        FilterbankCSP.collect_features_for_filter_selection(
+                        MultiClassFBCSP.collect_features_for_filter_selection(
                             features,
                             this_filt_per_fb
                         )
                     # make 5 times cross validation...
-                    test_accuracy = FilterbankCSP.cross_validate_lda(
+                    test_accuracy = MultiClassFBCSP.cross_validate_lda(
                         all_features
                     )
                     if test_accuracy > best_accuracy:
@@ -261,8 +265,8 @@ class MultiClassFBCSP(object):
             first_features.X = first_features.X[:, 0:0]
         else:
             first_features.X = first_features.X[:,
-                                                list(range(first_n_filters))
-                                                + list(range(-first_n_filters, 0))]
+                               list(range(first_n_filters))
+                               + list(range(-first_n_filters, 0))]
 
         all_features = first_features
         for i in range(1, n_filterbands):
@@ -272,9 +276,9 @@ class MultiClassFBCSP(object):
                 if this_n_filters == 0:
                     next_features.X = next_features.X[0:0]
                 else:
-                    next_features.X = next_features.X[
-                        :, list(range(this_n_filters))
-                        + list(range(-this_n_filters, 0))]
+                    next_features.X = next_features.X[:,
+                                      list(range(this_n_filters)) +
+                                      list(range(-this_n_filters, 0))]
                 all_features = concatenate_channels(
                     (all_features, next_features))
         return all_features
@@ -301,34 +305,6 @@ class MultiClassFBCSP(object):
             test_accuracy = np.mean(true_0_1_labels_test == predicted_test)
             test_accuracies.append(test_accuracy)
         return np.mean(test_accuracies)
-
-    def select_features(self):
-        n_folds = len(self.train_feature)
-        n_pairs = len(self.train_feature[0])
-        n_features = self.n_features
-        self.selected_features = np.ones((n_folds, n_pairs, n_features),
-                                         dtype=np.int) * -1
-
-        # Determine best features
-        for fold_nr in range(n_folds):
-            for pair_nr in range(n_pairs):
-                features = self.train_feature[fold_nr][pair_nr]
-                this_feature_inds = select_features(features.axes[0],
-                                                    features.data,
-                                                    n_features=n_features)
-                self.selected_features[fold_nr][pair_nr] = this_feature_inds
-        assert np.all(self.selected_features >= 0) and np.all(
-            self.selected_features
-            < self.train_feature[0][0].data.shape[1])
-        # Only retain selected best features
-        for fold_nr in range(n_folds):
-            for pair_nr in range(n_pairs):
-                this_feature_inds = self.selected_features[fold_nr][pair_nr]
-                for feature_type in ['train_feature',
-                                     'train_feature_full_fold',
-                                     'test_feature', 'test_feature_full_fold']:
-                    features = self.__dict__[feature_type][fold_nr][pair_nr]
-                    features.data = features.data[:, this_feature_inds]
 
     def train_classifiers(self):
         n_folds = len(self.binary_csp.folds)
