@@ -1,8 +1,8 @@
 # General modules
+import logging as log
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
-from logging import getLogger
 from itertools import combinations
 from numpy.random import RandomState
 from hgdecode.utils import print_manager
@@ -16,8 +16,6 @@ from hgdecode.models import import_model
 from hgdecode.binary import BinaryFBCSP
 from hgdecode.multiclass import MultiClassFBCSP
 from hgdecode.multiclass import MultiClassWeightedVoting
-
-log = getLogger(__name__)
 
 
 class FBCSPExperiment(object):
@@ -212,8 +210,13 @@ class FBCSPExperiment(object):
         self.binary_csp.run()
 
         # TODO: understand filterbankCSP
+        # TODO: change names and putting robintibor CSP code in the same
+        #  module (so BinaryCSP, FilterbankCSP and MultiClass...)
+        # TODO: once you have decided classes names, updating prints with
+        #  print_manager!! These ones suck!
 
         # at the very end of the binary CSP experiment...
+        print_manager('')
         log.info("Filterbank...")
         self.filterbank_csp = MultiClassFBCSP(
             binary_csp=self.binary_csp,

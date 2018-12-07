@@ -1,3 +1,4 @@
+import logging as log
 from numpy import max
 from numpy import abs
 from numpy import sum
@@ -6,7 +7,6 @@ from numpy import round
 from numpy import arange
 from numpy import int as npint
 from os.path import join
-from logging import getLogger
 from hgdecode.utils import print_manager
 from hgdecode.classes import EEGDataset
 from braindecode.datasets.bbci import BBCIDataset
@@ -16,8 +16,6 @@ from braindecode.mne_ext.signalproc import concatenate_raws_with_events
 from braindecode.datautil.signalproc import bandpass_cnt
 from braindecode.datautil.trial_segment import \
     create_signal_target_from_raw_mne
-
-log = getLogger(__name__)
 
 
 # %% GET_DATA_FILES_PATHS
@@ -65,7 +63,7 @@ def get_clean_trial_mask(cnt, name_to_start_codes, clean_ival_ms=(0, 4000)):
     # trials that have absolute microvolt values larger than +- 800
     clean_trial_mask = max(abs(set_for_cleaning.X), axis=(1, 2)) < 800
 
-    # log clean trials information
+    # logging clean trials information
     log.info(
         'Clean trials: {:3d}  of {:3d} ({:5.1f}%)'.format(
             sum(clean_trial_mask),

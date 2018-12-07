@@ -1,5 +1,5 @@
+import logging as log
 from numpy import empty, mean, array
-from logging import getLogger
 from hgdecode.lda import lda_apply
 from hgdecode.lda import lda_train_scaled
 from hgdecode.signalproc import bandpass_mne
@@ -9,8 +9,6 @@ from hgdecode.signalproc import select_classes
 from hgdecode.signalproc import apply_csp_var_log
 from braindecode.datautil.trial_segment import \
     create_signal_target_from_raw_mne
-
-log = getLogger(__name__)
 
 
 class BinaryFBCSP(object):

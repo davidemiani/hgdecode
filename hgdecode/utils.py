@@ -1,16 +1,14 @@
 import sys
 import datetime
+import logging as log
 from os import getcwd
 from os import system
 from os import makedirs
 from sys import platform
 from os.path import join
 from os.path import exists
-from logging import DEBUG
-from logging import getLogger
-from logging import basicConfig
 
-log = getLogger(__name__)
+now_dir = ''
 
 
 def dash_printer(input_string='', manual_input=32):
@@ -21,9 +19,11 @@ def print_manager(input_string='',
                   print_style='normal',
                   top_return=None,
                   bottom_return=None):
+    # top return
     if top_return is not None:
         print('\n' * (top_return - 1))
 
+    # input_string
     if print_style == 'normal':
         log.info(input_string)
     elif print_style == 'top-dashed':
@@ -44,6 +44,7 @@ def print_manager(input_string='',
         dash_printer(print_manager.last_print)
         print_manager.last_print = input_string
 
+    # bottom return
     if bottom_return is not None:
         print('\n' * (bottom_return - 1))
 
@@ -71,11 +72,29 @@ def datetime_dir_format():
 
 
 def touch_dir(directory):
-    if not exists(directory):
+    if exists(directory):
+        return True
+    else:
         makedirs(directory)
+        return False
 
 
-def create_log(results_dir=None, subject_id=1, learning_type='ml'):
+def touch_file(file_path):
+    if exists(file_path):
+        return True
+    else:
+        return False
+
+
+def create_log(results_dir=None,
+               learning_type='ml',
+               algorithm_or_model_name='FBCSP_rLDA',
+               subject_id=1):
+    # getting now_dir from global
+    global now_dir
+    if len(now_dir) == 0:
+        now_dir = datetime_dir_format()
+
     # if not specified, setting '$current_directory/results' as results_dir
     if results_dir is None:
         results_dir = join(getcwd(), 'results')
@@ -88,11 +107,15 @@ def create_log(results_dir=None, subject_id=1, learning_type='ml'):
     # setting log_file_dir
     log_file_dir = join(results_dir,
                         learning_type,
-                        datetime_dir_format(),
-                        subject_id_str)
+                        algorithm_or_model_name,
+                        now_dir)
 
-    # touching log_file_dir
+    # setting subject_results_dir
+    subject_results_dir = join(log_file_dir, subject_id_str)
+
+    # touching directories
     touch_dir(log_file_dir)
+    touch_dir(subject_results_dir)
 
     # setting log_file_name
     log_file_name = 'log.bin'
@@ -100,22 +123,25 @@ def create_log(results_dir=None, subject_id=1, learning_type='ml'):
     # setting log_file_path
     log_file_path = join(log_file_dir, log_file_name)
 
-    # creating the log file
-    sys.stdout = open(log_file_path, 'w')
-
-    # opening it using system commands
-    if platform == 'linux':
-        system('xdg-open ' + log_file_path.replace(' ', '\ '))
-    elif platform == 'darwin':  # macOSX
-        system('open ' + log_file_path.replace(' ', '\ '))
+    # creating and using log file as output only if it does not exist already
+    if touch_file(log_file_path):
+        pass
     else:
-        print('platform {:s} still not supported'.format(platform))
+        # creating the log file
+        sys.stdout = open(log_file_path, 'w')
 
-    # setting the logging object configuration (created as a global variable)
-    basicConfig(
-        format='%(asctime)s | %(levelname)s: %(message)s',
-        level=DEBUG,
-        stream=sys.stdout
-    )
+        # opening it using system commands
+        if platform == 'linux':
+            system('xdg-open ' + log_file_path.replace(' ', '\ '))
+        elif platform == 'darwin':  # macOSX
+            system('open ' + log_file_path.replace(' ', '\ '))
+        else:
+            print('platform {:s} still not supported'.format(platform))
 
-    return log
+        # setting the logging object configuration
+        log.basicConfig(
+            format='%(asctime)s | %(levelname)s: %(message)s',
+            filemode='w',
+            stream=sys.stdout,
+            level=log.DEBUG
+        )

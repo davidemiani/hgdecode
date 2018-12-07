@@ -72,8 +72,9 @@ for subject_id in subject_ids:
     # creating a log
     log = create_log(
         results_dir=results_dir,
-        subject_id=subject_id,
-        learning_type='dl'
+        learning_type='dl',
+        algorithm_or_model_name=model_name,
+        subject_id=subject_id
     )
 
     # printing current cycle information

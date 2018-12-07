@@ -15,6 +15,8 @@ further computation.
     
 Parameters
 ----------
+algorithm_name : str
+    Machine Learning algorithm name that is going to be used
 channel_names : list
     Channels to use for computation
 data_dir : str
@@ -27,6 +29,9 @@ subject_ids : tuple
     All the subject ids in a tuple; add or remove subjects to run the
     algorithm for them or not
 """
+# setting ml_algorithm
+algorithm_name = 'FBCSP_rLDA'
+
 # setting channel_names
 channel_names = ['FC5', 'FC1', 'FC2', 'FC6', 'C3', 'C4',
                  'CP5', 'CP1', 'CP2', 'CP6',
@@ -61,16 +66,20 @@ experiment will be run. You can of course change all the experiment inputs
 to obtain different results.
 """
 for subject_id in subject_ids:
-    # creating a log
-    log = create_log(
+    # creating or updating log references
+    create_log(
         results_dir=results_dir,
-        subject_id=subject_id,
-        learning_type='ml'
+        learning_type='ml',
+        algorithm_or_model_name=algorithm_name,
+        subject_id=subject_id
     )
 
     # printing current cycle information
     print_manager(
-        'FBCSP and rLDA algorithm for EEG on subject {:d}'.format(subject_id),
+        'ML with {:s} algorithm on subject {:d}'.format(
+            algorithm_name,
+            subject_id
+        ),
         'double-dashed',
         bottom_return=1
     )

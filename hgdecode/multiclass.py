@@ -1,12 +1,10 @@
 import itertools
 import numpy as np
+import logging as log
 from copy import deepcopy
-from logging import getLogger
 from braindecode.datautil.iterators import get_balanced_batches
 from hgdecode.signalproc import concatenate_channels, select_trials
 from hgdecode.lda import lda_train_scaled, lda_apply
-
-log = getLogger(__name__)
 
 
 class MultiClassFBCSP(object):
