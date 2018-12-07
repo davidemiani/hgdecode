@@ -19,6 +19,8 @@ channel_names : list
     Channels to use for computation
 data_dir : str
     Path to the directory that contains dataset
+model_name : str
+    Name of the Deep Learning model
 name_to_start_codes : OrderedDict
     All possible classes names and codes in an ordered dict format
 results_dir : str
@@ -26,7 +28,13 @@ results_dir : str
 subject_ids : tuple
     All the subject ids in a tuple; add or remove subjects to run the
     algorithm for them or not
+validation_frac : float
+    Fraction of examples that will compose test set
 """
+# setting model_name and validation_frac
+model_name = 'SchirmeisterDeepConvNet'
+validation_frac = 0.2
+
 # setting channel_names
 channel_names = ['FC5', 'FC1', 'FC2', 'FC6', 'C3', 'C4',
                  'CP5', 'CP1', 'CP2', 'CP6',
@@ -82,22 +90,24 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,
-        clean_interval=[0, 4000],
-        train_test_split=True
+        clean_ival_ms=[0, 4000],
+        epoch_ival_ms=(-500, 4000),
+        train_test_split=True,
+        validation_frac=validation_frac
     )
 
     # creating experiment instance
     exp = DLExperiment(
         # non-default inputs
         dataset=dataset,
-        model_name='SchirmeisterDeepConvNet',
+        model_name=model_name,
         results_dir=results_dir,
 
         # hyperparameters
         batch_size=128,
         epochs=6,
         verbose=True,
-        validation_frac=0.2,
+        validation_frac=validation_frac,
         loss='categorical_crossentropy',
         optimizer='Adam',
         metrics=['accuracy'],

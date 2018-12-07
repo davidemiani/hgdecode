@@ -2,6 +2,9 @@ from numpy import max
 from numpy import abs
 from numpy import sum
 from numpy import mean
+from numpy import round
+from numpy import arange
+from numpy import int as npint
 from os.path import join
 from logging import getLogger
 from hgdecode.utils import print_manager
@@ -17,6 +20,7 @@ from braindecode.datautil.trial_segment import \
 log = getLogger(__name__)
 
 
+# %% GET_DATA_FILES_PATHS
 def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
     # compute file name (for both train and test path)
     file_name = '{:d}.mat'.format(subject_id)
@@ -33,6 +37,7 @@ def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
     return file_path
 
 
+# %% LOAD_CNT
 def load_cnt(file_path):
     # create the loader object for BBCI standard
     loader = BBCIDataset(file_path, load_sensor_names=None)
@@ -41,7 +46,8 @@ def load_cnt(file_path):
     return loader.load()
 
 
-def get_clean_trial_mask(cnt, name_to_start_codes, clean_interval=(0, 4000)):
+# %% GET_CLEAN_TRIAL_MASK
+def get_clean_trial_mask(cnt, name_to_start_codes, clean_ival_ms=(0, 4000)):
     """
     Scan trial in continuous data and create a mask with only the
     valid ones; in this way, at the and of the loading routine,
@@ -52,7 +58,7 @@ def get_clean_trial_mask(cnt, name_to_start_codes, clean_interval=(0, 4000)):
     set_for_cleaning = create_signal_target_from_raw_mne(
         cnt,
         name_to_start_codes,
-        clean_interval
+        clean_ival_ms
     )
 
     # compute the clean_trial_mask: in this case we take only all
@@ -71,7 +77,8 @@ def get_clean_trial_mask(cnt, name_to_start_codes, clean_interval=(0, 4000)):
     return clean_trial_mask
 
 
-def picking_right_channels(cnt, channel_names):
+# %% PICK_RIGHT_CHANNELS
+def pick_right_channels(cnt, channel_names):
     # return the same cnt but with only right channels
     return cnt.pick_channels(channel_names)
 
@@ -92,13 +99,14 @@ def standardize_cnt(cnt):
     return cnt
 
 
-def ml_loader(data_dir,
-              name_to_start_codes,
-              channel_names,
-              subject_id=1,
-              resampling_freq=250,
-              clean_interval=(0, 4000),
-              train_test_split=True):
+# %% LOAD_AND_PREPROCESS_DATA
+def load_and_preprocess_data(data_dir,
+                             name_to_start_codes,
+                             channel_names,
+                             subject_id=1,
+                             resampling_freq=250,
+                             clean_ival_ms=(0, 4000),
+                             train_test_split=True):
     # getting data paths
     file_paths = get_data_files_paths(
         data_dir,
@@ -114,9 +122,11 @@ def ml_loader(data_dir,
     if len(file_paths) == 1:
         # ...loading just it, else...
         cnt = load_cnt(file_paths[0])
+        train_len = None
     elif len(file_paths) == 2:
         # loading train_cnt, test_cnt and merging them
         train_cnt = load_cnt(file_paths[0])
+        train_len = len(train_cnt.info['events'])
         test_cnt = load_cnt(file_paths[1])
         cnt = concatenate_raws_with_events([train_cnt, test_cnt])
     else:
@@ -129,13 +139,13 @@ def ml_loader(data_dir,
     clean_trial_mask = get_clean_trial_mask(
         cnt,
         name_to_start_codes,
-        clean_interval
+        clean_ival_ms
     )
     print_manager('DONE!!', bottom_return=1)
 
     # pick only right channels
     log.info('Picking only right channels...')
-    cnt = picking_right_channels(cnt, channel_names)
+    cnt = pick_right_channels(cnt, channel_names)
     print_manager('DONE!!', bottom_return=1)
 
     # resample continuous data
@@ -151,29 +161,77 @@ def ml_loader(data_dir,
     cnt = standardize_cnt(cnt)
     print_manager('DONE!!', bottom_return=1)
 
-    #
-    print_manager(
-        'LOADING ROUTINE COMPLETED',
-        'last',
-        bottom_return=1
+    return cnt, clean_trial_mask, train_len
+
+
+# %% ML_LOADER
+def ml_loader(data_dir,
+              name_to_start_codes,
+              channel_names,
+              subject_id=1,
+              resampling_freq=250,
+              clean_ival_ms=(0, 4000),
+              train_test_split=True):
+    outputs = load_and_preprocess_data(
+        data_dir=data_dir,
+        name_to_start_codes=name_to_start_codes,
+        channel_names=channel_names,
+        subject_id=subject_id,
+        resampling_freq=resampling_freq,
+        clean_ival_ms=clean_ival_ms,
+        train_test_split=train_test_split
     )
-
-    # return train_data (now complete) as dataset
-    return cnt, clean_trial_mask
+    return outputs[0], outputs[1]
 
 
+# %% DL_LOADER
 def dl_loader(data_dir,
               name_to_start_codes,
               channel_names,
               subject_id=1,
               resampling_freq=250,
-              clean_interval=(0, 4000),
-              train_test_split=True):
-    # getting data paths
-    file_paths = get_data_files_paths(
-        data_dir,
+              clean_ival_ms=(0, 4000),
+              epoch_ival_ms=(-500, 4000),
+              train_test_split=True,
+              validation_frac=0.2):
+    cnt, clean_trial_mask, train_len = load_and_preprocess_data(
+        data_dir=data_dir,
+        name_to_start_codes=name_to_start_codes,
+        channel_names=channel_names,
         subject_id=subject_id,
+        resampling_freq=resampling_freq,
+        clean_ival_ms=clean_ival_ms,
         train_test_split=train_test_split
     )
 
-# TODO: dl_loader
+    # epoching continuous data (from RawArray to SignalAndTarget)
+    epo = create_signal_target_from_raw_mne(
+        cnt,
+        name_to_start_codes,
+        epoch_ival_ms
+    )
+    tot_len = len(epo.y)
+
+    # if train_len is None, train and test data were not split
+    if train_len is None:
+        train_len = round(tot_len / 1.8)
+    test_len = tot_len - train_len
+
+    # determining losses in train and test data
+    indexes = arange(tot_len)
+    train_indexes = indexes[0:train_len]
+    test_indexes = indexes[-test_len:]
+    train_clean_trial_mask = clean_trial_mask[train_indexes]
+    test_clean_trial_mask = clean_trial_mask[test_indexes]
+    new_train_len = train_clean_trial_mask.astype(npint).sum()
+    new_test_len = test_clean_trial_mask.astype(npint).sum()
+
+    # cutting epoched signal
+    epo.X = epo.X[clean_trial_mask]
+    epo.y = epo.y[clean_trial_mask]
+
+    # creating EEGDataset instance and returning it
+    return EEGDataset.from_epo_to_dataset(epo=epo,
+                                          train_len=new_train_len,
+                                          test_len=new_test_len,
+                                          validation_frac=validation_frac)

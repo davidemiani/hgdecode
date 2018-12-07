@@ -2,6 +2,7 @@
   <dictionary name="dave">
     <words>
       <w>asctime</w>
+      <w>bandpassed</w>
       <w>bandpassing</w>
       <w>bbci</w>
       <w>butterworth</w>
@@ -27,6 +28,7 @@
       <w>resample</w>
       <w>resampling</w>
       <w>schirmeister</w>
+      <w>scipy</w>
       <w>sfreq</w>
     </words>
   </dictionary>

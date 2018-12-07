@@ -82,7 +82,7 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,
-        clean_interval=[0, 4000]
+        clean_ival_ms=[0, 4000]
     )
 
     # creating experiment instance

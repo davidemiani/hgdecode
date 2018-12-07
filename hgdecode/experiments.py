@@ -251,26 +251,30 @@ class DLExperiment(object):
                  results_dir,
                  batch_size=128,
                  epochs=6,
+                 verbose=False,
                  validation_frac=0.2,
                  loss='categorical_crossentropy',
                  optimizer='Adam',
-                 metrics='None'):
+                 metrics='None',
+                 shuffle='False'):
         # resolving PEP8 requests on mutable input arguments
         if metrics is 'None':
             metrics = ['accuracy']
 
         # non-default inputs
-        self.dataset = dataset,
-        self.model_name = model_name,
-        self.results_dir = results_dir,
+        self.dataset = dataset
+        self.model_name = model_name
+        self.results_dir = results_dir
 
         # hyperparameters
-        self.batch_size = batch_size,
-        self.epochs = epochs,
-        self.validation_frac = validation_frac,
-        self.loss = loss,
-        self.optimizer = optimizer,
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.verbose = verbose
+        self.validation_frac = validation_frac
+        self.loss = loss
+        self.optimizer = optimizer
         self.metrics = metrics
+        self.shuffle = shuffle
 
         # importing model
         self.model = import_model(self)

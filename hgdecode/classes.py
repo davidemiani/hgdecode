@@ -1,5 +1,6 @@
 from numpy import floor
 from numpy import zeros
+from numpy import arange
 from numpy import concatenate
 
 
@@ -131,21 +132,59 @@ class EEGDataset(object):
     TODO: documentation for this class
     """
 
-    def __init__(self):
-        pass
+    def __init__(self,
+                 epo_train_x,
+                 epo_train_y,
+                 epo_valid_x,
+                 epo_valid_y,
+                 epo_test_x,
+                 epo_test_y):
+        assert len(epo_train_x) == len(epo_train_y)
+        assert len(epo_valid_x) == len(epo_valid_y)
+        assert len(epo_test_x) == len(epo_test_y)
+        self.X_train = epo_train_x
+        self.y_train = epo_train_y
+        self.X_valid = epo_valid_x
+        self.y_valid = epo_valid_y
+        self.X_test = epo_test_x
+        self.y_test = epo_test_y
 
     def __repr__(self):
-        pass
+        return '<EEGDataset with train:{:d}, valid:{:d}, test:{:d}>'.format(
+            len(self.y_train), len(self.y_valid), len(self.y_test)
+        )
 
     def __len__(self):
-        pass
-
-    def __iter__(self):
-        pass
-
-    def __getitem__(self, item):
-        pass
+        return len(self.y_train) + len(self.y_valid) + len(self.y_test)
 
     @property
     def shape(self):
-        return []
+        return self.X_train.shape[1:]
+
+    @staticmethod
+    def from_epo_to_dataset(epo, train_len, test_len, validation_frac=0.2):
+        # computing number of trails for each valid, train & test
+        tot_len = len(epo.y)
+        valid_len = int(floor(train_len * validation_frac))
+        train_len = train_len - valid_len
+
+        # computing indexes
+        indexes = arange(tot_len)
+        train_indexes = indexes[0:train_len]
+        valid_indexes = indexes[train_len:(train_len + valid_len)]
+        test_indexes = indexes[-test_len:]
+
+        # cutting epo into train, valid & test
+        epo_train_x = epo.X[train_indexes, ...]
+        epo_train_y = epo.y[train_indexes, ...]
+        epo_valid_x = epo.X[valid_indexes, ...]
+        epo_valid_y = epo.y[valid_indexes, ...]
+        epo_test_x = epo.X[test_indexes, ...]
+        epo_test_y = epo.y[test_indexes, ...]
+
+        return EEGDataset(epo_train_x,
+                          epo_train_y,
+                          epo_valid_x,
+                          epo_valid_y,
+                          epo_test_x,
+                          epo_test_y)
