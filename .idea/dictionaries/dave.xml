@@ -1,14 +1,18 @@
 <component name="ProjectDictionaryState">
   <dictionary name="dave">
     <words>
+      <w>arxiv</w>
       <w>asctime</w>
       <w>bandpassed</w>
       <w>bandpassing</w>
       <w>bbci</w>
       <w>butterworth</w>
       <w>conv</w>
+      <w>convolutional</w>
       <w>crossentropy</w>
       <w>datasets</w>
+      <w>depthwise</w>
+      <w>dmdl</w>
       <w>eigenvectors</w>
       <w>epoched</w>
       <w>epoching</w>
@@ -20,16 +24,23 @@
       <w>hgdecode</w>
       <w>hyperparameters</w>
       <w>ival</w>
+      <w>keras</w>
       <w>levelname</w>
       <w>miani</w>
       <w>microvolt</w>
       <w>multiclass</w>
       <w>npint</w>
+      <w>overcomplete</w>
+      <w>pointwise</w>
+      <w>regularizations</w>
       <w>resample</w>
       <w>resampling</w>
-      <w>schirmeister</w>
+      <w>schirrmeister</w>
       <w>scipy</w>
       <w>sfreq</w>
+      <w>softmax</w>
+      <w>ssvep</w>
+      <w>waytowich</w>
     </words>
   </dictionary>
 </component>

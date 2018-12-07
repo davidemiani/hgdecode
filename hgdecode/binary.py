@@ -15,7 +15,7 @@ log = getLogger(__name__)
 
 class BinaryFBCSP(object):
     """
-    TODO: a description of this class
+    # TODO: a description of this class
     """
 
     def __init__(self,

@@ -79,6 +79,9 @@ class FilterBank(object):
     def __repr__(self):
         return repr(self.bank)
 
+    def __str__(self):
+        return str(self.bank)
+
     def __len__(self):
         return len(self.bank)
 
@@ -129,7 +132,7 @@ class FilterBank(object):
 
 class EEGDataset(object):
     """
-    TODO: documentation for this class
+    # TODO: documentation for this class
     """
 
     def __init__(self,
@@ -154,12 +157,37 @@ class EEGDataset(object):
             len(self.y_train), len(self.y_valid), len(self.y_test)
         )
 
+    def __str__(self):
+        return '<EEGDataset with train:{:d}, valid:{:d}, test:{:d}>'.format(
+            len(self.y_train), len(self.y_valid), len(self.y_test)
+        )
+
     def __len__(self):
         return len(self.y_train) + len(self.y_valid) + len(self.y_test)
 
     @property
     def shape(self):
         return self.X_train.shape[1:]
+
+    @property
+    def train_frac(self):
+        return len(self.y_train) / len(self)
+
+    @property
+    def valid_frac(self):
+        return len(self.y_valid) / len(self)
+
+    @property
+    def test_frac(self):
+        return len(self.y_test) / len(self)
+
+    @property
+    def n_channels(self):
+        return self.shape[0]
+
+    @property
+    def n_samples(self):
+        return self.shape[1]
 
     @staticmethod
     def from_epo_to_dataset(epo, train_len, test_len, validation_frac=0.2):

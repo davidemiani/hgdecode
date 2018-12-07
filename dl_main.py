@@ -32,7 +32,7 @@ validation_frac : float
     Fraction of examples that will compose test set
 """
 # setting model_name and validation_frac
-model_name = 'SchirmeisterDeepConvNet'
+model_name = 'DeepConvNet'
 validation_frac = 0.2
 
 # setting channel_names
@@ -73,7 +73,7 @@ for subject_id in subject_ids:
     log = create_log(
         results_dir=results_dir,
         subject_id=subject_id,
-        learning_type='ml'
+        learning_type='dl'
     )
 
     # printing current cycle information
@@ -102,16 +102,19 @@ for subject_id in subject_ids:
         dataset=dataset,
         model_name=model_name,
         results_dir=results_dir,
+        name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
         batch_size=128,
         epochs=6,
-        verbose=True,
-        validation_frac=validation_frac,
         loss='categorical_crossentropy',
         optimizer='Adam',
         metrics=['accuracy'],
-        shuffle=True
+        shuffle=True,
+
+        # other parameters
+        verbose=True,
+        subject_id=subject_id
     )
 
     # training

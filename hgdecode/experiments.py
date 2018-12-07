@@ -246,18 +246,24 @@ class DLExperiment(object):
     """
 
     def __init__(self,
+                 # non-default inputs
                  dataset,
                  model_name,
                  results_dir,
+                 name_to_start_codes,
+
+                 # hyperparameters
                  batch_size=128,
                  epochs=6,
-                 verbose=False,
-                 validation_frac=0.2,
                  loss='categorical_crossentropy',
                  optimizer='Adam',
                  metrics='None',
-                 shuffle='False'):
-        # resolving PEP8 requests on mutable input arguments
+                 shuffle='False',
+
+                 # other parameters
+                 verbose=False,
+                 subject_id=1):
+        # resolving PEP8 issue throwing on mutable input arguments
         if metrics is 'None':
             metrics = ['accuracy']
 
@@ -265,25 +271,66 @@ class DLExperiment(object):
         self.dataset = dataset
         self.model_name = model_name
         self.results_dir = results_dir
+        self.name_to_start_codes = name_to_start_codes
 
         # hyperparameters
         self.batch_size = batch_size
         self.epochs = epochs
-        self.verbose = verbose
-        self.validation_frac = validation_frac
         self.loss = loss
         self.optimizer = optimizer
         self.metrics = metrics
         self.shuffle = shuffle
 
+        # other parameters
+        self.verbose = verbose
+        self.subject_id = subject_id
+
+        # TODO: results indexing
+
         # importing model
         self.model = import_model(self)
 
     def __repr__(self):
-        pass
+        return '<DLExperiment with model:{:s}>'.format(self.model_name)
 
+    def __str__(self):
+        return '<DLExperiment with model:{:s}>'.format(self.model_name)
+
+    def __len__(self):
+        return len(self.dataset)
+
+    @property
+    def shape(self):
+        return self.dataset.shape
+
+    @property
+    def train_frac(self):
+        return self.dataset.train_frac
+
+    @property
+    def valid_frac(self):
+        return self.dataset.valid_frac
+
+    @property
+    def test_frac(self):
+        return self.dataset.test_frac
+
+    @property
+    def n_classes(self):
+        return len(self.name_to_start_codes)
+
+    @property
+    def n_channels(self):
+        return self.dataset.n_channels
+
+    @property
+    def n_samples(self):
+        return self.dataset.n_samples
+
+    # TODO: train routine (see dmdl)
     def train(self):
         pass
 
+    # TODO: test routine (see dmdl)
     def test(self):
         pass
