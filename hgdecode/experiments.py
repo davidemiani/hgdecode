@@ -5,7 +5,6 @@ from numpy import setdiff1d
 from numpy import int as npint
 from os.path import join
 from itertools import combinations
-from keras.utils import to_categorical
 from numpy.random import RandomState
 from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
@@ -256,6 +255,8 @@ class DLExperiment(object):
                  optimizer='Adam',
                  metrics='None',
                  shuffle='False',
+                 crop_sample_size=512,
+                 crop_stride=1,
 
                  # other parameters
                  verbose=False,
@@ -277,6 +278,8 @@ class DLExperiment(object):
         self.optimizer = optimizer
         self.metrics = metrics
         self.shuffle = shuffle
+        self.crop_sample_size = crop_sample_size
+        self.crop_stride = crop_stride
 
         # other parameters
         self.verbose = verbose
@@ -290,14 +293,15 @@ class DLExperiment(object):
         self.h5_model_path = None
         self.paths_manager()
 
+        # creating crops
+        self.dataset.make_crops(self.crop_sample_size, self.crop_stride)
+
+        # forcing the x examples to have 4 dimensions
+        self.dataset.add_axis()
+
         # if loss is categorical, so parsing dataset_y to categorical repr
         if self.loss == 'categorical_crossentropy':
-            self.dataset.y_train = to_categorical(self.dataset.y_train,
-                                                  self.n_classes)
-            self.dataset.y_valid = to_categorical(self.dataset.y_valid,
-                                                  self.n_classes)
-            self.dataset.y_test = to_categorical(self.dataset.y_test,
-                                                 self.n_classes)
+            self.dataset.to_categorical(self.n_classes)
 
         # importing model
         self.model = import_model(self)

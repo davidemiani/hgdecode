@@ -3,7 +3,6 @@ from os.path import join
 from os.path import dirname
 from collections import OrderedDict
 from hgdecode.utils import create_log
-from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.experiments import DLExperiment
 

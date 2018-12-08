@@ -1,8 +1,12 @@
+from numpy import ceil
 from numpy import floor
 from numpy import zeros
 from numpy import arange
+from numpy import unique
+from numpy import repeat
 from numpy import newaxis
 from numpy import concatenate
+from keras.utils import to_categorical
 
 
 class FilterBank(object):
@@ -211,14 +215,84 @@ class EEGDataset(object):
         epo_test_x = epo.X[test_indexes, ...]
         epo_test_y = epo.y[test_indexes, ...]
 
-        # forcing the examples x to have 4 dimensions (for training)
-        epo_train_x = epo_train_x[..., newaxis]
-        epo_valid_x = epo_valid_x[..., newaxis]
-        epo_test_x = epo_test_x[..., newaxis]
-
         return EEGDataset(epo_train_x,
                           epo_train_y,
                           epo_valid_x,
                           epo_valid_y,
                           epo_test_x,
                           epo_test_y)
+
+    def make_crops(self, crop_sample_size=None, crop_stride=None):
+        # TODO: validating inputs
+        if crop_sample_size is not None:
+            # cropping train
+            self.X_train, self.y_train = self.crop_x_y(self.X_train,
+                                                       self.y_train,
+                                                       crop_sample_size,
+                                                       crop_stride)
+            # cropping valid
+            self.X_valid, self.y_valid = self.crop_x_y(self.X_valid,
+                                                       self.y_valid,
+                                                       crop_sample_size,
+                                                       crop_stride)
+            # cropping test
+            self.X_test, self.y_test = self.crop_x_y(self.X_test,
+                                                     self.y_test,
+                                                     crop_sample_size,
+                                                     crop_stride)
+
+    @staticmethod
+    def crop_x_y(x, y, crop_sample_size, crop_stride):
+        # getting shapes
+        d = x.shape[0]
+        h = x.shape[1]
+        w = x.shape[2]
+
+        # determining how many crops
+        n_crops = int(ceil(
+            (w - crop_sample_size + 1) / crop_stride
+        ))
+        new_d = n_crops * d
+        new_h = h
+        new_w = crop_sample_size
+
+        # pre-allocating
+        new_x = zeros((new_d, new_h, new_w))
+        new_y = zeros(new_d)
+
+        # filling pre-allocated arrays
+        init = 0
+        stop = init + n_crops
+        for i in range(d):
+            # new_x[init:stop, ...] = EEGDataset.crop_x(x[i, ...],
+            #                                        n_crops,
+            #                                        crop_sample_size,
+            #                                        crop_stride)
+            new_y[init:stop, ...] = EEGDataset.crop_y(y[i], n_crops)
+
+            # updating init & stop
+            init = init + n_crops
+            stop = stop + n_crops
+
+        # returning new arrays
+        return new_x, new_y
+
+    @staticmethod
+    def crop_x(x, n_crops, crop_sample_size, crop_stride):
+        return x
+
+    @staticmethod
+    def crop_y(y, n_crops):
+        return repeat(y, n_crops)
+
+    def add_axis(self):
+        self.X_train = self.X_train[..., newaxis]
+        self.X_valid = self.X_valid[..., newaxis]
+        self.X_test = self.X_test[..., newaxis]
+
+    def to_categorical(self, n_classes=None):
+        if n_classes is None:
+            n_classes = len(unique(self.y_train))
+        self.y_train = to_categorical(self.y_train, n_classes)
+        self.y_valid = to_categorical(self.y_valid, n_classes)
+        self.y_test = to_categorical(self.y_test, n_classes)
