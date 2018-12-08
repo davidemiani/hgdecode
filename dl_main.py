@@ -10,7 +10,7 @@ from hgdecode.experiments import DLExperiment
 """
 SETTING PARAMETERS
 ------------------
-In the following, you have to set / modify all the parameters to use for 
+In the following, you have to set / modify all the parameters to use for
 further computation.
 
 Parameters
@@ -63,25 +63,18 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 """
 MAIN CYCLE
 ----------
-For each subject, a new log will be created and the specific dataset loaded; 
-this dataset will be used to create an instance of the experiment; then the 
-experiment will be run. You can of course change all the experiment inputs 
+For each subject, a new log will be created and the specific dataset loaded;
+this dataset will be used to create an instance of the experiment; then the
+experiment will be run. You can of course change all the experiment inputs
 to obtain different results.
 """
 for subject_id in subject_ids:
-    # creating a log
+    # creating a log object
     create_log(
         results_dir=results_dir,
         learning_type='dl',
         algorithm_or_model_name=model_name,
         subject_id=subject_id
-    )
-
-    # printing current cycle information
-    print_manager(
-        'DL with {:s} model on subject {:d}'.format(model_name, subject_id),
-        'double-dashed',
-        bottom_return=1
     )
 
     # loading dataset

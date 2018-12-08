@@ -74,16 +74,6 @@ for subject_id in subject_ids:
         subject_id=subject_id
     )
 
-    # printing current cycle information
-    print_manager(
-        'ML with {:s} algorithm on subject {:d}'.format(
-            algorithm_name,
-            subject_id
-        ),
-        'double-dashed',
-        bottom_return=1
-    )
-
     # loading dataset
     cnt, clean_trial_mask = ml_loader(
         data_dir=data_dir,
@@ -104,11 +94,11 @@ for subject_id in subject_ids:
         epoch_ival_ms=(-500, 4000),
 
         # bank filter-related inputs
-        # min_freq=[0, 10],
-        # max_freq=[12, 122],
-        # window=[6, 8],
-        # overlap=[3, 4],
-        # filt_order=3,
+        min_freq=[0, 10],
+        max_freq=[12, 122],
+        window=[6, 8],
+        overlap=[3, 4],
+        filt_order=3,
 
         # machine learning parameters
         n_folds=10,

@@ -145,3 +145,14 @@ def create_log(results_dir=None,
             stream=sys.stdout,
             level=log.DEBUG
         )
+
+    # printing current cycle information
+    print_manager(
+        '{:s} with {:s} on subject {:d}'.format(
+            learning_type.upper(),
+            algorithm_or_model_name,
+            subject_id
+        ),
+        'double-dashed',
+        bottom_return=1
+    )

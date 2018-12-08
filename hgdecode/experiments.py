@@ -303,7 +303,9 @@ class DLExperiment(object):
         self.model = import_model(self)
 
         # compiling it
-        self.model.compile(loss=self.loss, optimizer=self.optimizer)
+        self.model.compile(loss=self.loss,
+                           optimizer=self.optimizer,
+                           metrics=self.metrics)
 
     def __repr__(self):
         return '<DLExperiment with model:{:s}>'.format(self.model_name)
@@ -361,6 +363,7 @@ class DLExperiment(object):
         self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
 
     def train(self):
+        print_manager('RUNNING TRAINING', 'double-dashed')
         # saving a model picture
         # TODO: model_pic.png saving routine
 
@@ -384,7 +387,19 @@ class DLExperiment(object):
                        verbose=self.verbose,
                        callbacks=[mcp, csv],
                        shuffle=self.shuffle)
+        print_manager('', 'last', bottom_return=1)
 
-    # TODO: test routine (see dmdl)
     def test(self):
-        pass
+        print_manager('RUNNING TESTING', 'double-dashed')
+
+        # computing loss and accuracy
+        score = self.model.evaluate(
+            self.dataset.X_test,
+            self.dataset.y_test,
+            verbose=self.verbose
+        )
+
+        # printing results
+        print('Test loss:', score[0])
+        print('Test accuracy:', score[1])
+        print_manager('', 'last', bottom_return=2)
