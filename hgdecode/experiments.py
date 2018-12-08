@@ -1,11 +1,16 @@
 # General modules
-import logging as log
+from os import listdir
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
+from os.path import join
 from itertools import combinations
+from keras.utils import to_categorical
 from numpy.random import RandomState
+from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
+from keras.callbacks import CSVLogger
+from keras.callbacks import ModelCheckpoint
 from hgdecode.classes import FilterBank
 from braindecode.datautil.iterators import get_balanced_batches
 
@@ -277,10 +282,28 @@ class DLExperiment(object):
         self.verbose = verbose
         self.subject_id = subject_id
 
-        # TODO: results indexing
+        # managing paths
+        self.model_picture_path = None
+        self.model_report_path = None
+        self.train_report_path = None
+        self.h5_models_dir = None
+        self.h5_model_path = None
+        self.paths_manager()
+
+        # if loss is categorical, so parsing dataset_y to categorical repr
+        if self.loss == 'categorical_crossentropy':
+            self.dataset.y_train = to_categorical(self.dataset.y_train,
+                                                  self.n_classes)
+            self.dataset.y_valid = to_categorical(self.dataset.y_valid,
+                                                  self.n_classes)
+            self.dataset.y_test = to_categorical(self.dataset.y_test,
+                                                 self.n_classes)
 
         # importing model
         self.model = import_model(self)
+
+        # compiling it
+        self.model.compile(loss=self.loss, optimizer=self.optimizer)
 
     def __repr__(self):
         return '<DLExperiment with model:{:s}>'.format(self.model_name)
@@ -319,9 +342,48 @@ class DLExperiment(object):
     def n_samples(self):
         return self.dataset.n_samples
 
-    # TODO: train routine (see dmdl)
+    def paths_manager(self):
+        model_results_dir = join(self.results_dir, 'dl', self.model_name)
+        files_in_folder = listdir(model_results_dir)
+        files_in_folder.sort()
+        subject_str = str(self.subject_id)
+        if len(subject_str) == 1:
+            subject_str = '0' + subject_str
+        self.results_dir = join(model_results_dir,
+                                files_in_folder[-1],
+                                subject_str)
+        touch_dir(self.results_dir)
+        self.model_picture_path = join(self.results_dir, 'model_picture.png')
+        self.model_report_path = join(self.results_dir, 'model_report.txt')
+        self.train_report_path = join(self.results_dir, 'train_report.csv')
+        self.h5_models_dir = join(self.results_dir, 'h5_models')
+        touch_dir(self.h5_models_dir)
+        self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
+
     def train(self):
-        pass
+        # saving a model picture
+        # TODO: model_pic.png saving routine
+
+        # saving a model report
+        with open(self.model_report_path, 'w') as mr:
+            self.model.summary(print_fn=lambda x: mr.write(x + '\n'))
+
+        # saving a model report
+        csv = CSVLogger(self.train_report_path)
+
+        # creating a model checkpoint to save h5 for each epoch
+        mcp = ModelCheckpoint(self.h5_model_path)
+
+        # training!
+        self.model.fit(x=self.dataset.X_train,
+                       y=self.dataset.y_train,
+                       validation_data=(self.dataset.X_valid,
+                                        self.dataset.y_valid),
+                       batch_size=self.batch_size,
+                       epochs=self.epochs,
+                       verbose=self.verbose,
+                       callbacks=[mcp, csv],
+                       shuffle=self.shuffle)
 
     # TODO: test routine (see dmdl)
     def test(self):

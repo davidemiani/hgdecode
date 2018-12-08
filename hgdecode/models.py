@@ -98,7 +98,10 @@ def DeepConvNet(n_classes,
 
     # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block1)
 
-    block1 = BatchNormalization(axis=1, epsilon=1e-05, momentum=0.1)(block1)
+    block1 = BatchNormalization()(block1)
+
+    # (axis=1, epsilon=1e-05, momentum=0.1)(block1)
+
     block1 = Activation('elu')(block1)
     block1 = MaxPooling2D(pool_size=(1, 2), strides=(1, 2))(block1)
     block1 = Dropout(dropout_rate)(block1)

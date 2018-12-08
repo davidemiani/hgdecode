@@ -70,7 +70,7 @@ to obtain different results.
 """
 for subject_id in subject_ids:
     # creating a log
-    log = create_log(
+    create_log(
         results_dir=results_dir,
         learning_type='dl',
         algorithm_or_model_name=model_name,
