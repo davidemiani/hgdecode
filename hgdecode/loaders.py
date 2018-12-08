@@ -202,15 +202,21 @@ def dl_loader(data_dir,
         train_test_split=train_test_split
     )
 
+    # printing the eeg dataset instance creation
+    print_manager('CREATING EEG DATASET FOR DL', 'double-dashed')
+
     # epoching continuous data (from RawArray to SignalAndTarget)
+    print_manager('Epoching...')
     epo = create_signal_target_from_raw_mne(
         cnt,
         name_to_start_codes,
         epoch_ival_ms
     )
     tot_len = len(epo.y)
+    print_manager('DONE!!', bottom_return=1)
 
     # if train_len is None, train and test data were not split
+    print_manager('Determining sets dimensions...')
     if train_len is None:
         train_len = round(tot_len / 1.8)
     test_len = tot_len - train_len
@@ -223,13 +229,17 @@ def dl_loader(data_dir,
     test_clean_trial_mask = clean_trial_mask[test_indexes]
     new_train_len = train_clean_trial_mask.astype(npint).sum()
     new_test_len = test_clean_trial_mask.astype(npint).sum()
+    print_manager('DONE!!', bottom_return=1)
 
     # cutting epoched signal
+    print_manager('Creating EEGDataset instance...')
     epo.X = epo.X[clean_trial_mask]
     epo.y = epo.y[clean_trial_mask]
 
     # creating EEGDataset instance and returning it
-    return EEGDataset.from_epo_to_dataset(epo=epo,
-                                          train_len=new_train_len,
-                                          test_len=new_test_len,
-                                          validation_frac=validation_frac)
+    dataset = EEGDataset.from_epo_to_dataset(epo=epo,
+                                             train_len=new_train_len,
+                                             test_len=new_test_len,
+                                             validation_frac=validation_frac)
+    print_manager('DONE!!', 'last', bottom_return=1)
+    return dataset

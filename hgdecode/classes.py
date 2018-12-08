@@ -1,6 +1,7 @@
 from numpy import floor
 from numpy import zeros
 from numpy import arange
+from numpy import newaxis
 from numpy import concatenate
 
 
@@ -209,6 +210,11 @@ class EEGDataset(object):
         epo_valid_y = epo.y[valid_indexes, ...]
         epo_test_x = epo.X[test_indexes, ...]
         epo_test_y = epo.y[test_indexes, ...]
+
+        # forcing the examples x to have 4 dimensions (for training)
+        epo_train_x = epo_train_x[..., newaxis]
+        epo_valid_x = epo_valid_x[..., newaxis]
+        epo_test_x = epo_test_x[..., newaxis]
 
         return EEGDataset(epo_train_x,
                           epo_train_y,

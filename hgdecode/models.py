@@ -88,34 +88,53 @@ def DeepConvNet(n_classes,
     """
 
     # start the model
-    input_main = Input((1, n_channels, n_samples))
+    input_main = Input((n_channels, n_samples, 1))
     block1 = Conv2D(25, (1, 5),
-                    input_shape=(1, n_channels, n_samples),
-                    kernel_constraint=max_norm(2., axis=(0, 1, 2)))(input_main)
-    block1 = Conv2D(25, (n_channels, 1),
-                    kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block1)
+                    input_shape=(n_channels, n_samples, 1))(input_main)
+
+    # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(input_main)
+
+    block1 = Conv2D(25, (n_channels, 1))(block1)
+
+    # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block1)
+
     block1 = BatchNormalization(axis=1, epsilon=1e-05, momentum=0.1)(block1)
     block1 = Activation('elu')(block1)
     block1 = MaxPooling2D(pool_size=(1, 2), strides=(1, 2))(block1)
     block1 = Dropout(dropout_rate)(block1)
 
-    block2 = Conv2D(50, (1, 5),
-                    kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block1)
-    block2 = BatchNormalization(axis=1, epsilon=1e-05, momentum=0.1)(block2)
+    block2 = Conv2D(50, (1, 5))(block1)
+
+    # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block1)
+
+    block2 = BatchNormalization()(block2)
+
+    # (axis=1, epsilon=1e-05, momentum=0.1)(block2)
+
     block2 = Activation('elu')(block2)
     block2 = MaxPooling2D(pool_size=(1, 2), strides=(1, 2))(block2)
     block2 = Dropout(dropout_rate)(block2)
 
-    block3 = Conv2D(100, (1, 5),
-                    kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block2)
-    block3 = BatchNormalization(axis=1, epsilon=1e-05, momentum=0.1)(block3)
+    block3 = Conv2D(100, (1, 5))(block2)
+
+    # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block2)
+
+    block3 = BatchNormalization()(block3)
+
+    # axis=1, epsilon=1e-05, momentum=0.1)(block3)
+
     block3 = Activation('elu')(block3)
     block3 = MaxPooling2D(pool_size=(1, 2), strides=(1, 2))(block3)
     block3 = Dropout(dropout_rate)(block3)
 
-    block4 = Conv2D(200, (1, 5),
-                    kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block3)
-    block4 = BatchNormalization(axis=1, epsilon=1e-05, momentum=0.1)(block4)
+    block4 = Conv2D(200, (1, 5))(block3)
+
+    # kernel_constraint=max_norm(2., axis=(0, 1, 2)))(block3)
+
+    block4 = BatchNormalization()(block4)
+
+    # axis=1, epsilon=1e-05, momentum=0.1)(block4)
+
     block4 = Activation('elu')(block4)
     block4 = MaxPooling2D(pool_size=(1, 2), strides=(1, 2))(block4)
     block4 = Dropout(dropout_rate)(block4)
