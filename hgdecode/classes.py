@@ -7,6 +7,7 @@ from numpy import repeat
 from numpy import newaxis
 from numpy import concatenate
 from keras.utils import to_categorical
+from hgdecode.utils import print_manager
 
 
 class FilterBank(object):
@@ -222,27 +223,38 @@ class EEGDataset(object):
                           epo_test_x,
                           epo_test_y)
 
-    def make_crops(self, crop_sample_size=None, crop_stride=None):
+    def make_crops(self, crop_sample_size=None, crop_step=None):
         # TODO: validating inputs
         if crop_sample_size is not None:
+            # printing
+            print_manager('CROPPING ROUTINE', 'double-dashed')
+
             # cropping train
+            print_manager('Cropping train...')
             self.X_train, self.y_train = self.crop_x_y(self.X_train,
                                                        self.y_train,
                                                        crop_sample_size,
-                                                       crop_stride)
+                                                       crop_step)
+            print_manager('DONE!!', bottom_return=1)
+
             # cropping valid
+            print_manager('Cropping validation...')
             self.X_valid, self.y_valid = self.crop_x_y(self.X_valid,
                                                        self.y_valid,
                                                        crop_sample_size,
-                                                       crop_stride)
+                                                       crop_step)
+            print_manager('DONE!!', bottom_return=1)
+
             # cropping test
+            print_manager('Cropping test...')
             self.X_test, self.y_test = self.crop_x_y(self.X_test,
                                                      self.y_test,
                                                      crop_sample_size,
-                                                     crop_stride)
+                                                     crop_step)
+            print_manager('DONE!!', 'last', bottom_return=1)
 
     @staticmethod
-    def crop_x_y(x, y, crop_sample_size, crop_stride):
+    def crop_x_y(x, y, crop_sample_size, crop_step):
         # getting shapes
         d = x.shape[0]
         h = x.shape[1]
@@ -250,7 +262,7 @@ class EEGDataset(object):
 
         # determining how many crops
         n_crops = int(ceil(
-            (w - crop_sample_size + 1) / crop_stride
+            (w - crop_sample_size + 1) / crop_step
         ))
         new_d = n_crops * d
         new_h = h
@@ -264,10 +276,10 @@ class EEGDataset(object):
         init = 0
         stop = init + n_crops
         for i in range(d):
-            # new_x[init:stop, ...] = EEGDataset.crop_x(x[i, ...],
-            #                                        n_crops,
-            #                                        crop_sample_size,
-            #                                        crop_stride)
+            new_x[init:stop, ...] = EEGDataset.crop_x(x[i, ...],
+                                                      n_crops,
+                                                      crop_sample_size,
+                                                      crop_step)
             new_y[init:stop, ...] = EEGDataset.crop_y(y[i], n_crops)
 
             # updating init & stop
@@ -278,8 +290,22 @@ class EEGDataset(object):
         return new_x, new_y
 
     @staticmethod
-    def crop_x(x, n_crops, crop_sample_size, crop_stride):
-        return x
+    def crop_x(x, n_crops, crop_sample_size, crop_step):
+        # pre-allocating new_x
+        new_x = zeros((n_crops, x.shape[0], crop_sample_size))
+
+        # handling init & stop in x array
+        init = 0
+        stop = crop_sample_size
+
+        # cycling on new_x depth
+        for i in range(n_crops):
+            new_x[i, ...] = x[:, init:stop]
+            init = init + crop_step
+            stop = stop + crop_step
+
+        # returning new_x
+        return new_x
 
     @staticmethod
     def crop_y(y, n_crops):

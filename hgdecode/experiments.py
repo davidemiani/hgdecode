@@ -9,6 +9,7 @@ from numpy.random import RandomState
 from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
 from keras.callbacks import CSVLogger
+from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from hgdecode.classes import FilterBank
 from braindecode.datautil.iterators import get_balanced_batches
@@ -250,13 +251,17 @@ class DLExperiment(object):
 
                  # hyperparameters
                  batch_size=128,
-                 epochs=6,
+                 epochs=10,
+                 early_stopping=False,
+                 monitor='val_acc',
+                 min_delta=0.0001,
+                 patience=5,
                  loss='categorical_crossentropy',
                  optimizer='Adam',
                  metrics='None',
                  shuffle='False',
                  crop_sample_size=512,
-                 crop_stride=1,
+                 crop_step=1,
 
                  # other parameters
                  verbose=False,
@@ -274,12 +279,16 @@ class DLExperiment(object):
         # hyperparameters
         self.batch_size = batch_size
         self.epochs = epochs
+        self.early_stopping = early_stopping
+        self.monitor = monitor
+        self.min_delta = min_delta
+        self.patience = patience
         self.loss = loss
         self.optimizer = optimizer
         self.metrics = metrics
         self.shuffle = shuffle
         self.crop_sample_size = crop_sample_size
-        self.crop_stride = crop_stride
+        self.crop_step = crop_step
 
         # other parameters
         self.verbose = verbose
@@ -294,7 +303,7 @@ class DLExperiment(object):
         self.paths_manager()
 
         # creating crops
-        self.dataset.make_crops(self.crop_sample_size, self.crop_stride)
+        self.dataset.make_crops(self.crop_sample_size, self.crop_step)
 
         # forcing the x examples to have 4 dimensions
         self.dataset.add_axis()
@@ -381,15 +390,36 @@ class DLExperiment(object):
         # creating a model checkpoint to save h5 for each epoch
         mcp = ModelCheckpoint(self.h5_model_path)
 
+        # if early_stopping is True...
+        if self.early_stopping is True:
+            # putting epochs to a very large number
+            epochs = 1000
+
+            # creating early stopping callback
+            esc = EarlyStopping(monitor=self.monitor,
+                                min_delta=self.min_delta,
+                                patience=self.patience,
+                                verbose=self.verbose)
+
+            # creating the callbacks array
+            callbacks = [mcp, csv, esc]
+        else:
+            # getting user defined epochs value
+            epochs = self.epochs
+
+            # creating the callbacks array
+            callbacks = [mcp, csv]
+
         # training!
         self.model.fit(x=self.dataset.X_train,
                        y=self.dataset.y_train,
                        validation_data=(self.dataset.X_valid,
                                         self.dataset.y_valid),
+
                        batch_size=self.batch_size,
-                       epochs=self.epochs,
+                       epochs=epochs,
                        verbose=self.verbose,
-                       callbacks=[mcp, csv],
+                       callbacks=callbacks,
                        shuffle=self.shuffle)
         print_manager('', 'last', bottom_return=1)
 

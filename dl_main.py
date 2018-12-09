@@ -99,11 +99,17 @@ for subject_id in subject_ids:
 
         # hyperparameters
         batch_size=128,
-        epochs=6,
+        epochs=None,  # no epochs specified because...
+        early_stopping=True,  # ...we are gonna use early stopping
+        monitor='val_acc',
+        min_delta=0.0001,
+        patience=5,
         loss='categorical_crossentropy',
         optimizer='Adam',
         metrics=['accuracy'],
         shuffle=True,
+        crop_sample_size=512,
+        crop_step=8,
 
         # other parameters
         verbose=True,
