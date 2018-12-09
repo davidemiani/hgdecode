@@ -89,7 +89,8 @@ def touch_file(file_path):
 def create_log(results_dir=None,
                learning_type='ml',
                algorithm_or_model_name='FBCSP_rLDA',
-               subject_id=1):
+               subject_id=1,
+               output_on_file=False):
     # getting now_dir from global
     global now_dir
     if len(now_dir) == 0:
@@ -117,16 +118,13 @@ def create_log(results_dir=None,
     touch_dir(log_file_dir)
     touch_dir(subject_results_dir)
 
-    # setting log_file_name
-    log_file_name = 'log.bin'
+    if output_on_file is True:
+        # setting log_file_name
+        log_file_name = 'log.bin'
 
-    # setting log_file_path
-    log_file_path = join(log_file_dir, log_file_name)
+        # setting log_file_path
+        log_file_path = join(log_file_dir, log_file_name)
 
-    # creating and using log file as output only if it does not exist already
-    if touch_file(log_file_path):
-        pass
-    else:
         # creating the log file
         sys.stdout = open(log_file_path, 'w')
 
@@ -143,6 +141,12 @@ def create_log(results_dir=None,
             format='%(asctime)s | %(levelname)s: %(message)s',
             filemode='w',
             stream=sys.stdout,
+            level=log.DEBUG
+        )
+    else:
+        # setting the logging object configuration
+        log.basicConfig(
+            format='%(asctime)s | %(levelname)s: %(message)s',
             level=log.DEBUG
         )
 

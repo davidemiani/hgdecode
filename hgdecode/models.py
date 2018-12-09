@@ -17,41 +17,48 @@ from keras.constraints import max_norm
 from keras.regularizers import l1_l2
 
 
+# TODO: define optimizer in models, so you can specify learning rate
+
 # %% IMPORT MODEL (add here a new if clauses for each new model inserted)
 def import_model(dl_experiment):
     if dl_experiment.model_name == 'DeepConvNet':
         model = DeepConvNet(
-            dl_experiment.n_classes,
-            dl_experiment.n_channels,
-            dl_experiment.n_samples
+            n_classes=dl_experiment.n_classes,
+            n_channels=dl_experiment.n_channels,
+            n_samples=dl_experiment.n_samples,
+            dropout_rate=dl_experiment.dropout_rate
         )
         return model
     elif dl_experiment.model_name == 'ShallowConvNet':
         model = ShallowConvNet(
-            dl_experiment.n_classes,
-            dl_experiment.n_channels,
-            dl_experiment.n_samples
+            n_classes=dl_experiment.n_classes,
+            n_channels=dl_experiment.n_channels,
+            n_samples=dl_experiment.n_samples,
+            dropout_rate=dl_experiment.dropout_rate
         )
         return model
     elif dl_experiment.model_name == 'EEGNet':
         model = EEGNet(
-            dl_experiment.n_classes,
-            dl_experiment.n_channels,
-            dl_experiment.n_samples
+            n_classes=dl_experiment.n_classes,
+            n_channels=dl_experiment.n_channels,
+            n_samples=dl_experiment.n_samples,
+            dropout_rate=dl_experiment.dropout_rate
         )
         return model
     elif dl_experiment.model_name == 'EEGNet_SSVEP':
         model = EEGNet_SSVEP(
-            dl_experiment.n_classes,
-            dl_experiment.n_channels,
-            dl_experiment.n_samples
+            n_classes=dl_experiment.n_classes,
+            n_channels=dl_experiment.n_channels,
+            n_samples=dl_experiment.n_samples,
+            dropout_rate=dl_experiment.dropout_rate
         )
         return model
     elif dl_experiment.model_name == 'EEGNet_old':
         model = EEGNet_old(
-            dl_experiment.n_classes,
-            dl_experiment.n_channels,
-            dl_experiment.n_samples
+            n_classes=dl_experiment.n_classes,
+            n_channels=dl_experiment.n_channels,
+            n_samples=dl_experiment.n_samples,
+            dropout_rate=dl_experiment.dropout_rate
         )
         return model
     else:

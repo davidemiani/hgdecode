@@ -57,7 +57,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1,)  # 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 """
 MAIN CYCLE
@@ -73,7 +73,8 @@ for subject_id in subject_ids:
         results_dir=results_dir,
         learning_type='dl',
         algorithm_or_model_name=model_name,
-        subject_id=subject_id
+        subject_id=subject_id,
+        output_on_file=False
     )
 
     # loading dataset
@@ -83,7 +84,7 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,
-        clean_ival_ms=[0, 4000],
+        clean_ival_ms=(0, 4000),
         epoch_ival_ms=(-500, 4000),
         train_test_split=True,
         validation_frac=validation_frac
@@ -98,8 +99,10 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
+        dropout_rate=0.5,
+        learning_rate=0.001,
         batch_size=128,
-        epochs=None,  # no epochs specified because...
+        epochs=1000,  # no epochs specified because...
         early_stopping=True,  # ...we are gonna use early stopping
         monitor='val_acc',
         min_delta=0.0001,
@@ -113,7 +116,8 @@ for subject_id in subject_ids:
 
         # other parameters
         verbose=True,
-        subject_id=subject_id
+        subject_id=subject_id,
+        data_generator=False
     )
 
     # training

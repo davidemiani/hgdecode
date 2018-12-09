@@ -8,10 +8,12 @@ from itertools import combinations
 from numpy.random import RandomState
 from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
+from multiprocessing import cpu_count
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from hgdecode.classes import FilterBank
+from hgdecode.classes import DataGenerator
 from braindecode.datautil.iterators import get_balanced_batches
 
 # Deep Learning
@@ -250,6 +252,8 @@ class DLExperiment(object):
                  name_to_start_codes,
 
                  # hyperparameters
+                 dropout_rate=0.5,
+                 learning_rate=0.001,
                  batch_size=128,
                  epochs=10,
                  early_stopping=False,
@@ -265,7 +269,9 @@ class DLExperiment(object):
 
                  # other parameters
                  verbose=False,
-                 subject_id=1):
+                 subject_id=1,
+                 data_generator=False,
+                 workers=cpu_count()):
         # resolving PEP8 issue throwing on mutable input arguments
         if metrics is 'None':
             metrics = ['accuracy']
@@ -277,6 +283,8 @@ class DLExperiment(object):
         self.name_to_start_codes = name_to_start_codes
 
         # hyperparameters
+        self.dropout_rate = dropout_rate
+        self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.epochs = epochs
         self.early_stopping = early_stopping
@@ -293,6 +301,8 @@ class DLExperiment(object):
         # other parameters
         self.verbose = verbose
         self.subject_id = subject_id
+        self.data_generator = data_generator
+        self.workers = workers
 
         # managing paths
         self.model_picture_path = None
@@ -302,23 +312,8 @@ class DLExperiment(object):
         self.h5_model_path = None
         self.paths_manager()
 
-        # creating crops
-        self.dataset.make_crops(self.crop_sample_size, self.crop_step)
-
-        # forcing the x examples to have 4 dimensions
-        self.dataset.add_axis()
-
-        # if loss is categorical, so parsing dataset_y to categorical repr
-        if self.loss == 'categorical_crossentropy':
-            self.dataset.to_categorical(self.n_classes)
-
-        # importing model
-        self.model = import_model(self)
-
-        # compiling it
-        self.model.compile(loss=self.loss,
-                           optimizer=self.optimizer,
-                           metrics=self.metrics)
+        # setting model to None, it will be loaded in the train routine
+        self.model = None
 
     def __repr__(self):
         return '<DLExperiment with model:{:s}>'.format(self.model_name)
@@ -376,15 +371,7 @@ class DLExperiment(object):
         self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
 
     def train(self):
-        print_manager('RUNNING TRAINING', 'double-dashed')
-        # saving a model picture
-        # TODO: model_pic.png saving routine
-
-        # saving a model report
-        with open(self.model_report_path, 'w') as mr:
-            self.model.summary(print_fn=lambda x: mr.write(x + '\n'))
-
-        # saving a model report
+        # saving a train report
         csv = CSVLogger(self.train_report_path)
 
         # creating a model checkpoint to save h5 for each epoch
@@ -410,18 +397,56 @@ class DLExperiment(object):
             # creating the callbacks array
             callbacks = [mcp, csv]
 
-        # training!
-        self.model.fit(x=self.dataset.X_train,
-                       y=self.dataset.y_train,
-                       validation_data=(self.dataset.X_valid,
-                                        self.dataset.y_valid),
+        # using fit_generator if a data generator is required
+        if self.data_generator is True:
+            training_generator = DataGenerator()
+            validation_generator = DataGenerator()
 
-                       batch_size=self.batch_size,
-                       epochs=epochs,
-                       verbose=self.verbose,
-                       callbacks=callbacks,
-                       shuffle=self.shuffle)
+            # training!
+            print_manager('RUNNING TRAINING', 'double-dashed')
+            self.model.fit_generator(generator=training_generator,
+                                     validation_data=validation_generator,
+                                     use_multiprocessing=True,
+                                     workers=self.workers,
+                                     epochs=epochs,
+                                     verbose=self.verbose,
+                                     callbacks=callbacks)
+        else:
+            # creating crops
+            self.dataset.make_crops(self.crop_sample_size, self.crop_step)
+
+            # forcing the x examples to have 4 dimensions
+            self.dataset.add_axis()
+
+            # parsing y to categorical
+            self.dataset.to_categorical()
+
+            # importing model
+            self.model = import_model(self)
+
+            # compiling model
+            self.model.compile(loss=self.loss,
+                               optimizer=self.optimizer,
+                               metrics=self.metrics)
+
+            # saving model picture and report
+            self.save_model_pic_and_report()
+
+            # training!
+            print_manager('RUNNING TRAINING', 'double-dashed')
+            self.model.fit(x=self.dataset.X_train,
+                           y=self.dataset.y_train,
+                           validation_data=(self.dataset.X_valid,
+                                            self.dataset.y_valid),
+                           batch_size=self.batch_size,
+                           epochs=epochs,
+                           verbose=self.verbose,
+                           callbacks=callbacks,
+                           shuffle=self.shuffle)
         print_manager('', 'last', bottom_return=1)
+
+        # TODO: if validation_frac is 0 or None, not to split train and not
+        #  to train the epochs hyperparameter.
 
     def test(self):
         print_manager('RUNNING TESTING', 'double-dashed')
@@ -437,3 +462,11 @@ class DLExperiment(object):
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
         print_manager('', 'last', bottom_return=2)
+
+    def save_model_pic_and_report(self):
+        # saving a model picture
+        # TODO: model_pic.png saving routine
+
+        # saving a model report
+        with open(self.model_report_path, 'w') as mr:
+            self.model.summary(print_fn=lambda x: mr.write(x + '\n'))
