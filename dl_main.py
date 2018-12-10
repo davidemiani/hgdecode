@@ -99,7 +99,7 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
-        dropout_rate=0.25,
+        dropout_rate=0.5,
         learning_rate=0.001,  # still not supported
         batch_size=512,
         epochs=1000,

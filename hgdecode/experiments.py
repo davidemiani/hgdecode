@@ -324,6 +324,7 @@ class DLExperiment(object):
         self.model.compile(loss=self.loss,
                            optimizer=self.optimizer,
                            metrics=self.metrics)
+        self.model.summary()
         print_manager('DONE!!', print_style='last', bottom_return=1)
 
     def __repr__(self):
