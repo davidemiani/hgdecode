@@ -99,11 +99,11 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
-        dropout_rate=0.5,
-        learning_rate=0.001,
-        batch_size=128,
-        epochs=1000,  # no epochs specified because...
-        early_stopping=True,  # ...we are gonna use early stopping
+        dropout_rate=0.25,
+        learning_rate=0.001,  # still not supported
+        batch_size=512,
+        epochs=1000,
+        early_stopping=False,
         monitor='val_acc',
         min_delta=0.0001,
         patience=5,
@@ -112,12 +112,12 @@ for subject_id in subject_ids:
         metrics=['accuracy'],
         shuffle=True,
         crop_sample_size=512,
-        crop_step=8,
+        crop_step=1,
 
         # other parameters
         verbose=True,
         subject_id=subject_id,
-        data_generator=False
+        data_generator=True
     )
 
     # training

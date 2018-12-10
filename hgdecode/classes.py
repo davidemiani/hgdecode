@@ -4,9 +4,10 @@ from numpy import zeros
 from numpy import arange
 from numpy import unique
 from numpy import repeat
+from numpy import append
+from numpy import random
 from numpy import newaxis
 from numpy import concatenate
-from numpy import random
 from keras.utils import Sequence
 from keras.utils import to_categorical
 from hgdecode.utils import print_manager
@@ -233,7 +234,7 @@ class EEGDataset(object):
 
             # cropping train
             print_manager('Cropping train...')
-            self.X_train, self.y_train = self.crop_x_y(self.X_train,
+            self.X_train, self.y_train = self.crop_X_y(self.X_train,
                                                        self.y_train,
                                                        crop_sample_size,
                                                        crop_step)
@@ -241,7 +242,7 @@ class EEGDataset(object):
 
             # cropping valid
             print_manager('Cropping validation...')
-            self.X_valid, self.y_valid = self.crop_x_y(self.X_valid,
+            self.X_valid, self.y_valid = self.crop_X_y(self.X_valid,
                                                        self.y_valid,
                                                        crop_sample_size,
                                                        crop_step)
@@ -249,18 +250,18 @@ class EEGDataset(object):
 
             # cropping test
             print_manager('Cropping test...')
-            self.X_test, self.y_test = self.crop_x_y(self.X_test,
+            self.X_test, self.y_test = self.crop_X_y(self.X_test,
                                                      self.y_test,
                                                      crop_sample_size,
                                                      crop_step)
             print_manager('DONE!!', 'last', bottom_return=1)
 
     @staticmethod
-    def crop_x_y(x, y, crop_sample_size, crop_step):
+    def crop_X_y(X, y, crop_sample_size, crop_step):
         # getting shapes
-        d = x.shape[0]
-        h = x.shape[1]
-        w = x.shape[2]
+        d = X.shape[0]
+        h = X.shape[1]
+        w = X.shape[2]
 
         # determining how many crops
         n_crops = int(ceil(
@@ -271,14 +272,14 @@ class EEGDataset(object):
         new_w = crop_sample_size
 
         # pre-allocating
-        new_x = zeros((new_d, new_h, new_w))
+        new_X = zeros((new_d, new_h, new_w))
         new_y = zeros(new_d)
 
         # filling pre-allocated arrays
         init = 0
         stop = init + n_crops
         for i in range(d):
-            new_x[init:stop, ...] = EEGDataset.crop_x(x[i, ...],
+            new_X[init:stop, ...] = EEGDataset.crop_X(X[i, ...],
                                                       n_crops,
                                                       crop_sample_size,
                                                       crop_step)
@@ -289,25 +290,25 @@ class EEGDataset(object):
             stop = stop + n_crops
 
         # returning new arrays
-        return new_x, new_y
+        return new_X, new_y
 
     @staticmethod
-    def crop_x(x, n_crops, crop_sample_size, crop_step):
+    def crop_X(X, n_crops, crop_sample_size, crop_step):
         # pre-allocating new_x
-        new_x = zeros((n_crops, x.shape[0], crop_sample_size))
+        new_X = zeros((n_crops, X.shape[0], crop_sample_size))
 
-        # handling init & stop in x array
+        # handling init & stop in X array
         init = 0
         stop = crop_sample_size
 
         # cycling on new_x depth
         for i in range(n_crops):
-            new_x[i, ...] = x[:, init:stop]
+            new_X[i, ...] = X[:, init:stop]
             init = init + crop_step
             stop = stop + crop_step
 
         # returning new_x
-        return new_x
+        return new_X
 
     @staticmethod
     def crop_y(y, n_crops):
@@ -326,61 +327,147 @@ class EEGDataset(object):
         self.y_test = to_categorical(self.y_test, n_classes)
 
 
-class DataGenerator(Sequence):
+class EEGDataGenerator(Sequence):
     """
     # TODO: class description
     """
 
-    def __init__(self, list_IDs, labels, batch_size=32, dim=(32, 32, 32),
-                 n_channels=1,
-                 n_classes=10, shuffle=True):
+    def __init__(self,
+                 # data
+                 X,
+                 y,
+                 # main dimensions
+                 batch_size=512,
+                 n_classes=None,
+                 # crop dimensions
+                 crop_sample_size=512,
+                 crop_step=1,
+                 # others
+                 shuffle=True):
         """Initialization"""
-        self.dim = dim
+        # data
+        self.X = X
+        self.y = y
+
+        # main dimensions
         self.batch_size = batch_size
-        self.labels = labels
-        self.list_IDs = list_IDs
-        self.n_channels = n_channels
-        self.n_classes = n_classes
+        self.n_trials = X.shape[0]
+        self.n_channels = X.shape[1]
+        self.n_samples = X.shape[2]
+        if n_classes is None:
+            self.n_classes = len(unique(y))
+        else:
+            self.n_classes = n_classes
+
+        # crop dimensions
+        self.crop_sample_size = crop_sample_size
+        self.crop_step = crop_step
+        self.n_crops_for_trial = int(ceil(
+            (self.n_samples - crop_sample_size + 1) / crop_step
+        ))
+        self.n_crops = self.n_crops_for_trial * self.n_trials
+
+        # others
         self.shuffle = shuffle
-        self.indexes = None
+        self.current_batch = None
+
+        # allocating indexes to None, than updating using on_epoch_end()
+        self.indexes = None  # pointer to trials
+        self.next_to_unpack = None  # pointer to indexes
         self.on_epoch_end()
+
+        # pre-allocating crop stack & unpacking the first trial indexed
+        self.crop_stack_X = None
+        self.crop_stack_y = None
+        self.unpack_trial()
 
     def __len__(self):
         """Denotes the number of batches per epoch"""
-        return int(floor(len(self.list_IDs) / self.batch_size))
+        return int(floor(self.n_crops / self.batch_size))
 
     def __getitem__(self, index):
         """Generate one batch of data"""
-        # Generate indexes of the batch
-        indexes = self.indexes[
-                  index * self.batch_size:(index + 1) * self.batch_size]
-
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        # registering current batch
+        self.current_batch = index
 
         # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
+        X, y = self.__data_generation()
 
         return X, y
 
     def on_epoch_end(self):
-        """Updates indexes after each epoch"""
-        self.indexes = arange(len(self.list_IDs))
+        """
+        Updates indexes after each epoch; the indexes order will tell the
+        trainer what is the next trial order to unpack
+        """
+        self.indexes = arange(self.n_trials)
         if self.shuffle is True:
             random.shuffle(self.indexes)
+        self.next_to_unpack = 0
 
-    def __data_generation(self, list_IDs_temp):
+    def __data_generation(self):
         """Generates data containing batch_size samples"""
-        # Initialization
-        X = zeros((self.batch_size, *self.dim, self.n_channels))
-        y = zeros(self.batch_size, dtype=int)
+        while len(self.crop_stack_y) < self.batch_size:
+            self.unpack_trial()
 
-        # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            # Store sample
-            X[i, ...] = np.load('data/' + ID + '.npy')
+        # getting first batch_size elements from stacks
+        start = 0
+        stop = self.batch_size
+        indexes = arange(start=start, stop=stop)
+        X = self.crop_stack_X[indexes, ...]
+        y = self.crop_stack_y[indexes]
 
-            # Store class
-            y[i] = self.labels[ID]
+        # popping stack
+        start = self.batch_size
+        stop = len(self.crop_stack_y)
+        indexes = arange(start=start, stop=stop)
+        self.crop_stack_X = self.crop_stack_X[indexes, ...]
+        self.crop_stack_y = self.crop_stack_y[indexes]
 
-        return X, to_categorical(y, num_classes=self.n_classes)
+        # forcing the x examples to have 4 dimensions
+        X = X[..., newaxis]
+
+        # parsing y to categorical
+        y = to_categorical(y, num_classes=self.n_classes)
+
+        # returning data generated
+        return X, y
+
+    def unpack_trial(self):
+        # first unpack has to (re)create the stack
+        if self.next_to_unpack is 0:
+            # unpacking first X trial
+            self.crop_stack_X = EEGDataset.crop_X(
+                self.X[self.indexes[self.next_to_unpack], ...],
+                self.n_crops_for_trial, self.crop_sample_size, self.crop_step
+            )
+
+            # unpacking first y trial
+            self.crop_stack_y = EEGDataset.crop_y(
+                self.y[self.indexes[self.next_to_unpack]],
+                self.n_crops_for_trial
+            )
+        else:
+            # appending X
+            self.crop_stack_X = append(
+                self.crop_stack_X,
+                EEGDataset.crop_X(
+                    self.X[self.indexes[self.next_to_unpack], ...],
+                    self.n_crops_for_trial,
+                    self.crop_sample_size,
+                    self.crop_step
+                ),
+                axis=0
+            )
+
+            # appending y
+            self.crop_stack_y = append(
+                self.crop_stack_y,
+                EEGDataset.crop_y(
+                    self.y[self.indexes[self.next_to_unpack]],
+                    self.n_crops_for_trial
+                )
+            )
+
+        # updating next_to_unpack
+        self.next_to_unpack += 1

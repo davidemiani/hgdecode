@@ -13,7 +13,7 @@ from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from hgdecode.classes import FilterBank
-from hgdecode.classes import DataGenerator
+from hgdecode.classes import EEGDataGenerator
 from braindecode.datautil.iterators import get_balanced_batches
 
 # Deep Learning
@@ -264,8 +264,8 @@ class DLExperiment(object):
                  optimizer='Adam',
                  metrics='None',
                  shuffle='False',
-                 crop_sample_size=512,
-                 crop_step=1,
+                 crop_sample_size=None,
+                 crop_step=None,
 
                  # other parameters
                  verbose=False,
@@ -295,8 +295,12 @@ class DLExperiment(object):
         self.optimizer = optimizer
         self.metrics = metrics
         self.shuffle = shuffle
-        self.crop_sample_size = crop_sample_size
-        self.crop_step = crop_step
+        if crop_sample_size is None:
+            self.crop_sample_size = self.n_samples
+            self.crop_step = 1
+        else:
+            self.crop_sample_size = crop_sample_size
+            self.crop_step = crop_step
 
         # other parameters
         self.verbose = verbose
@@ -312,8 +316,15 @@ class DLExperiment(object):
         self.h5_model_path = None
         self.paths_manager()
 
-        # setting model to None, it will be loaded in the train routine
-        self.model = None
+        # importing model
+        print_manager('IMPORTING & COMPILING MODEL', 'double-dashed')
+        self.model = import_model(self)
+
+        # compiling model
+        self.model.compile(loss=self.loss,
+                           optimizer=self.optimizer,
+                           metrics=self.metrics)
+        print_manager('DONE!!', print_style='last', bottom_return=1)
 
     def __repr__(self):
         return '<DLExperiment with model:{:s}>'.format(self.model_name)
@@ -371,6 +382,13 @@ class DLExperiment(object):
         self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
 
     def train(self):
+        # saving a model picture
+        # TODO: model_pic.png saving routine
+
+        # saving a model report
+        with open(self.model_report_path, 'w') as mr:
+            self.model.summary(print_fn=lambda x: mr.write(x + '\n'))
+
         # saving a train report
         csv = CSVLogger(self.train_report_path)
 
@@ -399,8 +417,18 @@ class DLExperiment(object):
 
         # using fit_generator if a data generator is required
         if self.data_generator is True:
-            training_generator = DataGenerator()
-            validation_generator = DataGenerator()
+            training_generator = EEGDataGenerator(self.dataset.X_train,
+                                                  self.dataset.y_train,
+                                                  self.batch_size,
+                                                  self.n_classes,
+                                                  self.crop_sample_size,
+                                                  self.crop_step)
+            validation_generator = EEGDataGenerator(self.dataset.X_train,
+                                                    self.dataset.y_train,
+                                                    self.batch_size,
+                                                    self.n_classes,
+                                                    self.crop_sample_size,
+                                                    self.crop_step)
 
             # training!
             print_manager('RUNNING TRAINING', 'double-dashed')
@@ -420,17 +448,6 @@ class DLExperiment(object):
 
             # parsing y to categorical
             self.dataset.to_categorical()
-
-            # importing model
-            self.model = import_model(self)
-
-            # compiling model
-            self.model.compile(loss=self.loss,
-                               optimizer=self.optimizer,
-                               metrics=self.metrics)
-
-            # saving model picture and report
-            self.save_model_pic_and_report()
 
             # training!
             print_manager('RUNNING TRAINING', 'double-dashed')
@@ -462,11 +479,3 @@ class DLExperiment(object):
         print('Test loss:', score[0])
         print('Test accuracy:', score[1])
         print_manager('', 'last', bottom_return=2)
-
-    def save_model_pic_and_report(self):
-        # saving a model picture
-        # TODO: model_pic.png saving routine
-
-        # saving a model report
-        with open(self.model_report_path, 'w') as mr:
-            self.model.summary(print_fn=lambda x: mr.write(x + '\n'))

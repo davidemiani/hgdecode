@@ -25,7 +25,7 @@ def import_model(dl_experiment):
         model = DeepConvNet(
             n_classes=dl_experiment.n_classes,
             n_channels=dl_experiment.n_channels,
-            n_samples=dl_experiment.n_samples,
+            n_samples=dl_experiment.crop_sample_size,
             dropout_rate=dl_experiment.dropout_rate
         )
         return model
@@ -33,7 +33,7 @@ def import_model(dl_experiment):
         model = ShallowConvNet(
             n_classes=dl_experiment.n_classes,
             n_channels=dl_experiment.n_channels,
-            n_samples=dl_experiment.n_samples,
+            n_samples=dl_experiment.crop_sample_size,
             dropout_rate=dl_experiment.dropout_rate
         )
         return model
@@ -41,7 +41,7 @@ def import_model(dl_experiment):
         model = EEGNet(
             n_classes=dl_experiment.n_classes,
             n_channels=dl_experiment.n_channels,
-            n_samples=dl_experiment.n_samples,
+            n_samples=dl_experiment.crop_sample_size,
             dropout_rate=dl_experiment.dropout_rate
         )
         return model
@@ -49,7 +49,7 @@ def import_model(dl_experiment):
         model = EEGNet_SSVEP(
             n_classes=dl_experiment.n_classes,
             n_channels=dl_experiment.n_channels,
-            n_samples=dl_experiment.n_samples,
+            n_samples=dl_experiment.crop_sample_size,
             dropout_rate=dl_experiment.dropout_rate
         )
         return model
@@ -57,7 +57,7 @@ def import_model(dl_experiment):
         model = EEGNet_old(
             n_classes=dl_experiment.n_classes,
             n_channels=dl_experiment.n_channels,
-            n_samples=dl_experiment.n_samples,
+            n_samples=dl_experiment.crop_sample_size,
             dropout_rate=dl_experiment.dropout_rate
         )
         return model
