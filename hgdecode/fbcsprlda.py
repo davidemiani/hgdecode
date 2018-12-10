@@ -18,7 +18,7 @@ from braindecode.datautil.trial_segment import \
 
 class BinaryFBCSP(object):
     """
-    # TODO: a description of this class
+    # TODO: a description for this class
     """
 
     def __init__(self,

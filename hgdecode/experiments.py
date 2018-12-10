@@ -463,7 +463,7 @@ class DLExperiment(object):
                            shuffle=self.shuffle)
         print_manager('', 'last', bottom_return=1)
 
-        # TODO: if validation_frac is 0 or None, not to split train and not
+        # TODO: if validation_frac is 0 or None, not to split train and test
         #  to train the epochs hyperparameter.
 
     def test(self):
