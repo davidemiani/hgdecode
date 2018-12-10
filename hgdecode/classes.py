@@ -316,9 +316,9 @@ class EEGDataset(object):
 
     def add_axis(self):
         # TODO: channel first or last
-        self.X_train = self.X_train[newaxis, ...]
-        self.X_valid = self.X_valid[newaxis, ...]
-        self.X_test = self.X_test[newaxis, ...]
+        self.X_train = self.X_train[:, newaxis, ...]
+        self.X_valid = self.X_valid[:, newaxis, ...]
+        self.X_test = self.X_test[:, newaxis, ...]
 
     def to_categorical(self, n_classes=None):
         if n_classes is None:
@@ -427,7 +427,7 @@ class EEGDataGenerator(Sequence):
         self.crop_stack_y = self.crop_stack_y[indexes]
 
         # forcing the x examples to have 4 dimensions
-        X = X[newaxis, ...]
+        X = X[:, newaxis, ...]
 
         # parsing y to categorical
         y = to_categorical(y, num_classes=self.n_classes)
