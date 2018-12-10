@@ -66,12 +66,13 @@ experiment will be run. You can of course change all the experiment inputs
 to obtain different results.
 """
 for subject_id in subject_ids:
-    # creating or updating log references
+    # creating a log object
     create_log(
         results_dir=results_dir,
         learning_type='ml',
         algorithm_or_model_name=algorithm_name,
-        subject_id=subject_id
+        subject_id=subject_id,
+        output_on_file=False
     )
 
     # loading dataset
