@@ -99,9 +99,9 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
-        dropout_rate=0.5,
+        dropout_rate=0.1,
         learning_rate=0.001,  # still not supported
-        batch_size=512,
+        batch_size=60,
         epochs=1000,
         early_stopping=False,
         monitor='val_acc',
@@ -111,13 +111,13 @@ for subject_id in subject_ids:
         optimizer='Adam',
         metrics=['accuracy'],
         shuffle=True,
-        crop_sample_size=512,
+        crop_sample_size=1125,
         crop_step=1,
 
         # other parameters
         verbose=True,
         subject_id=subject_id,
-        data_generator=True
+        data_generator=False
     )
 
     # training
