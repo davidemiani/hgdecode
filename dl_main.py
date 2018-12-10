@@ -27,12 +27,9 @@ results_dir : str
 subject_ids : tuple
     All the subject ids in a tuple; add or remove subjects to run the
     algorithm for them or not
-validation_frac : float
-    Fraction of examples that will compose test set
 """
 # setting model_name and validation_frac
-model_name = 'DeepConvNet'
-validation_frac = 0.2
+model_name = 'DeepConvNet'  # Schirrmeister: 'DeepConvNet' or 'ShallowNet'
 
 # setting channel_names
 channel_names = ['FC5', 'FC1', 'FC2', 'FC6', 'C3', 'C4',
@@ -83,11 +80,12 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
         channel_names=channel_names,
         subject_id=subject_id,
-        resampling_freq=250,
-        clean_ival_ms=(0, 4000),
-        epoch_ival_ms=(-500, 4000),
-        train_test_split=True,
-        validation_frac=validation_frac
+        resampling_freq=250,  # Schirrmeister: 250
+        clean_ival_ms=(0, 4000),  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
+        train_test_split=True,  # Schirrmeister: True
+        clean_on_all_channels=True,  # Schirrmeister: True
+        validation_frac=0.1  # Schirrmeister: ?
     )
 
     # creating experiment instance
@@ -99,25 +97,25 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
 
         # hyperparameters
-        dropout_rate=0.1,
-        learning_rate=0.001,  # still not supported
-        batch_size=60,
-        epochs=1000,
-        early_stopping=False,
-        monitor='val_acc',
-        min_delta=0.0001,
-        patience=5,
-        loss='categorical_crossentropy',
-        optimizer='Adam',
-        metrics=['accuracy'],
-        shuffle=True,
-        crop_sample_size=1125,
-        crop_step=1,
+        dropout_rate=0.5,  # Schirrmeister: 0.5
+        learning_rate=0.001,  # Schirrmeister: ?, still not supported
+        batch_size=32,  # Schirrmeister: 512
+        epochs=1000,  # Schirrmeister: ?
+        early_stopping=False,  # Schirrmeister: ?
+        monitor='val_acc',  # Schirrmeister: ?
+        min_delta=0.0001,  # Schirrmeister: ?
+        patience=5,  # Schirrmeister: ?
+        loss='categorical_crossentropy',  # Schirrmeister: ad hoc
+        optimizer='Adam',  # Schirrmeister: Adam
+        metrics=['accuracy'],  # Schirrmeister: ?
+        shuffle=True,  # Schirrmeister: ?
+        crop_sample_size=None,  # Schirrmeister: 1125
+        crop_step=None,  # Schirrmeister: 1
 
         # other parameters
         verbose=True,
         subject_id=subject_id,
-        data_generator=False
+        data_generator=False  # Schirrmeister: True
     )
 
     # training

@@ -394,6 +394,8 @@ class DLExperiment(object):
         csv = CSVLogger(self.train_report_path)
 
         # creating a model checkpoint to save h5 for each epoch
+        # TODO: sostituire questo con il save the best; attenti a come si
+        # chiama, in più gestire un ingresso save_each_epoch roba così
         mcp = ModelCheckpoint(self.h5_model_path)
 
         # if early_stopping is True...

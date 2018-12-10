@@ -1,4 +1,5 @@
 import logging as log
+from gc import collect
 from numpy import max
 from numpy import abs
 from numpy import sum
@@ -36,9 +37,15 @@ def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
 
 
 # %% LOAD_CNT
-def load_cnt(file_path):
+def load_cnt(file_path, channel_names, clean_on_all_channels=True):
+    # if we have to run the cleaning procedure on all channels, putting
+    # load_sensor_names to None will assure us the BBCIDataset class will
+    # load all possible sensors
+    if clean_on_all_channels is True:
+        channel_names = None
+
     # create the loader object for BBCI standard
-    loader = BBCIDataset(file_path, load_sensor_names=None)
+    loader = BBCIDataset(file_path, load_sensor_names=channel_names)
 
     # load data
     return loader.load()
@@ -88,12 +95,15 @@ def standardize_cnt(cnt):
         cnt
     )
 
+    # computing Nyquist frequency
+    sampling_freq = cnt.info['sfreq']
+    nyquist_freq = sampling_freq / 2
+
     # cut away DC and too high frequencies
     cnt = mne_apply(
-        lambda x: bandpass_cnt(x, 0.1, 122.0, cnt.info['sfreq']),
+        lambda x: bandpass_cnt(x, 0.1, nyquist_freq, sampling_freq),
         cnt
     )
-
     return cnt
 
 
@@ -102,9 +112,10 @@ def load_and_preprocess_data(data_dir,
                              name_to_start_codes,
                              channel_names,
                              subject_id=1,
-                             resampling_freq=250,
+                             resampling_freq=None,
                              clean_ival_ms=(0, 4000),
-                             train_test_split=True):
+                             train_test_split=True,
+                             clean_on_all_channels=True):
     # getting data paths
     file_paths = get_data_files_paths(
         data_dir,
@@ -119,14 +130,29 @@ def load_and_preprocess_data(data_dir,
     # if exists only one data file...
     if len(file_paths) == 1:
         # ...loading just it, else...
-        cnt = load_cnt(file_paths[0])
+        cnt = load_cnt(file_path=file_paths[0],
+                       channel_names=channel_names,
+                       clean_on_all_channels=clean_on_all_channels)
         train_len = None
     elif len(file_paths) == 2:
-        # loading train_cnt, test_cnt and merging them
-        train_cnt = load_cnt(file_paths[0])
+        # ...loading train_cnt and test_cnt also
+        train_cnt = load_cnt(file_path=file_paths[0],
+                             channel_names=channel_names,
+                             clean_on_all_channels=clean_on_all_channels)
+        test_cnt = load_cnt(file_path=file_paths[1],
+                            channel_names=channel_names,
+                            clean_on_all_channels=clean_on_all_channels)
+
+        # getting train length before merging them
         train_len = len(train_cnt.info['events'])
-        test_cnt = load_cnt(file_paths[1])
+
+        # merging train and test (computation will be faster)
         cnt = concatenate_raws_with_events([train_cnt, test_cnt])
+
+        # collecting garbage
+        del train_cnt
+        del test_cnt
+        collect()
     else:
         raise Exception('something went wrong: check single/multiple file '
                         'loading routine.')
@@ -135,9 +161,9 @@ def load_and_preprocess_data(data_dir,
     # getting clean_trial_mask
     print_manager('Getting clean trial mask...')
     clean_trial_mask = get_clean_trial_mask(
-        cnt,
-        name_to_start_codes,
-        clean_ival_ms
+        cnt=cnt,
+        name_to_start_codes=name_to_start_codes,
+        clean_ival_ms=clean_ival_ms
     )
     print_manager('DONE!!', bottom_return=1)
 
@@ -147,12 +173,13 @@ def load_and_preprocess_data(data_dir,
     print_manager('DONE!!', bottom_return=1)
 
     # resample continuous data
-    log.info('Resampling continuous data...')
-    cnt = resample_cnt(
-        cnt,
-        resampling_freq
-    )
-    print_manager('DONE!!', bottom_return=1)
+    if resampling_freq is not None:
+        log.info('Resampling continuous data...')
+        cnt = resample_cnt(
+            cnt,
+            resampling_freq
+        )
+        print_manager('DONE!!', bottom_return=1)
 
     # standardize continuous data
     log.info('Standardizing continuous data...')
@@ -167,7 +194,7 @@ def ml_loader(data_dir,
               name_to_start_codes,
               channel_names,
               subject_id=1,
-              resampling_freq=250,
+              resampling_freq=None,
               clean_ival_ms=(0, 4000),
               train_test_split=True):
     outputs = load_and_preprocess_data(
@@ -187,10 +214,11 @@ def dl_loader(data_dir,
               name_to_start_codes,
               channel_names,
               subject_id=1,
-              resampling_freq=250,
+              resampling_freq=None,
               clean_ival_ms=(0, 4000),
               epoch_ival_ms=(-500, 4000),
               train_test_split=True,
+              clean_on_all_channels=True,
               validation_frac=0.2):
     cnt, clean_trial_mask, train_len = load_and_preprocess_data(
         data_dir=data_dir,
@@ -199,7 +227,8 @@ def dl_loader(data_dir,
         subject_id=subject_id,
         resampling_freq=resampling_freq,
         clean_ival_ms=clean_ival_ms,
-        train_test_split=train_test_split
+        train_test_split=train_test_split,
+        clean_on_all_channels=clean_on_all_channels
     )
 
     # printing the eeg dataset instance creation
