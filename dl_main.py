@@ -84,7 +84,7 @@ for subject_id in subject_ids:
         clean_ival_ms=(0, 4000),  # Schirrmeister: (0, 4000)
         epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
-        clean_on_all_channels=True,  # Schirrmeister: True
+        clean_on_all_channels=False,  # Schirrmeister: True
         validation_frac=0.1  # Schirrmeister: ?
     )
 
@@ -115,7 +115,8 @@ for subject_id in subject_ids:
         # other parameters
         verbose=True,
         subject_id=subject_id,
-        data_generator=False  # Schirrmeister: True
+        data_generator=False,  # Schirrmeister: True
+        save_model_at_each_epoch=False
     )
 
     # training

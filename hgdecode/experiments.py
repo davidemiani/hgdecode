@@ -271,7 +271,8 @@ class DLExperiment(object):
                  verbose=False,
                  subject_id=1,
                  data_generator=False,
-                 workers=cpu_count()):
+                 workers=cpu_count(),
+                 save_model_at_each_epoch=False):
         # resolving PEP8 issue throwing on mutable input arguments
         if metrics is 'None':
             metrics = ['accuracy']
@@ -307,6 +308,7 @@ class DLExperiment(object):
         self.subject_id = subject_id
         self.data_generator = data_generator
         self.workers = workers
+        self.save_model_at_each_epoch = save_model_at_each_epoch
 
         # managing paths
         self.model_picture_path = None
@@ -378,9 +380,16 @@ class DLExperiment(object):
         self.model_picture_path = join(self.results_dir, 'model_picture.png')
         self.model_report_path = join(self.results_dir, 'model_report.txt')
         self.train_report_path = join(self.results_dir, 'train_report.csv')
-        self.h5_models_dir = join(self.results_dir, 'h5_models')
-        touch_dir(self.h5_models_dir)
-        self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
+
+        # if the user want to save the model on each epoch...
+        if self.save_model_at_each_epoch:
+            # ...creating models directory and an iterable name, else...
+            self.h5_models_dir = join(self.results_dir, 'h5_models')
+            touch_dir(self.h5_models_dir)
+            self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
+        else:
+            # pointing to the same results directory
+            self.h5_model_path = join(self.results_dir, 'net_best_val_loss.h5')
 
     def train(self):
         # saving a model picture
@@ -393,10 +402,13 @@ class DLExperiment(object):
         # saving a train report
         csv = CSVLogger(self.train_report_path)
 
-        # creating a model checkpoint to save h5 for each epoch
-        # TODO: sostituire questo con il save the best; attenti a come si
-        # chiama, in più gestire un ingresso save_each_epoch roba così
-        mcp = ModelCheckpoint(self.h5_model_path)
+        # saving model
+        if self.save_model_at_each_epoch:
+            mcp = ModelCheckpoint(self.h5_model_path)
+        else:
+            mcp = ModelCheckpoint(self.h5_model_path,
+                                  monitor='val_loss',
+                                  save_best_only=True)
 
         # if early_stopping is True...
         if self.early_stopping is True:
