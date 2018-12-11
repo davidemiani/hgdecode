@@ -471,10 +471,11 @@ class DLExperiment(object):
             # creating a MetricsTracker instance
             callbacks.append(
                 MetricsTracker(
-                    self.dataset,
-                    self.epochs,
-                    self.n_classes,
-                    self.plot_paths_dict
+                    dataset=self.dataset,
+                    epochs=self.epochs,
+                    n_classes=self.n_classes,
+                    batch_size=self.batch_size,
+                    plot_paths_dict=self.plot_paths_dict
                 )
             )
 

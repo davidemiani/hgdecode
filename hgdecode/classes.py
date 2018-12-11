@@ -12,7 +12,6 @@ from keras.utils import Sequence
 from keras.utils import to_categorical
 from keras.callbacks import Callback
 from hgdecode.utils import print_manager
-from hgdecode.utils import get_metrics
 from sklearn.metrics import confusion_matrix
 
 
@@ -508,48 +507,44 @@ class MetricsTracker(Callback):
         Callback.__init__(self)
 
     def on_epoch_end(self, epoch, logs=None):
-        # computing loss and other metrics for train, valid & test
-        score_train = self.model.evaluate(X=self.dataset.X_train,
-                                          y=self.dataset.y_train,
-                                          batch_size=self.batch_size,
-                                          verbose=0)
-        score_valid = self.model.evaluate(X=self.dataset.X_valid,
-                                          y=self.dataset.y_valid,
-                                          batch_size=self.batch_size,
-                                          verbose=0)
-        score_test = self.model.evaluate(X=self.dataset.X_test,
-                                         y=self.dataset.y_test,
-                                         batch_size=self.batch_size,
-                                         verbose=0)
-        # getting losses from scores
-        self.train['loss'][epoch] = self.get_loss_from_score(score_train)
-        self.valid['loss'][epoch] = self.get_loss_from_score(score_valid)
-        self.test['loss'][epoch] = self.get_loss_from_score(score_test)
+        # loss for training and validation is stored in logs dict
+        self.train['loss'][epoch] = logs['loss']
+        self.valid['loss'][epoch] = logs['val_loss']
+
+        # computing loss and other metrics for test
+        score = self.model.evaluate(x=self.dataset.X_test,
+                                    y=self.dataset.y_test,
+                                    batch_size=self.batch_size,
+                                    verbose=0)
+        if score is list:
+            self.test['loss'][epoch] = score[0]
+        else:
+            self.test['loss'][epoch] = score
 
         # computing predictions for train, valid & test
-        y_pred_train = self.model.predict(X=self.dataset.X_train,
+        y_true_train = self.dataset.y_train.argmax(axis=1)
+        y_pred_train = self.model.predict(x=self.dataset.X_train,
                                           batch_size=self.batch_size,
                                           verbose=0).argmax(axis=1)
-        y_pred_valid = self.model.predict(X=self.dataset.X_valid,
+        y_true_valid = self.dataset.y_valid.argmax(axis=1)
+        y_pred_valid = self.model.predict(x=self.dataset.X_valid,
                                           batch_size=self.batch_size,
                                           verbose=0).argmax(axis=1)
-        y_pred_test = self.model.predict(X=self.dataset.X_test,
+        y_true_test = self.dataset.y_test.argmax(axis=1)
+        y_pred_test = self.model.predict(x=self.dataset.X_test,
                                          batch_size=self.batch_size,
                                          verbose=0).argmax(axis=1)
 
         # from prediction, computing confusion matrix
         self.train['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred=y_pred_train, y_true=self.dataset.y_train.argmax(axis=1)
+            y_pred=y_pred_train, y_true=y_true_train
         )
         self.valid['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred_valid, self.dataset.y_valid.argmax(axis=1)
+            y_pred=y_pred_valid, y_true=y_true_valid
         )
         self.test['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred_test, self.dataset.y_test.argmax(axis=1)
+            y_pred=y_pred_test, y_true=y_true_test
         )
-
-        # printing information about this epoch
-        accuracy, sensitivity, specificity = get_metrics(y_true=y_test)
 
     def on_train_end(self, logs=None):
         pass

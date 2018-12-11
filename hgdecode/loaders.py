@@ -95,13 +95,14 @@ def standardize_cnt(cnt):
         cnt
     )
 
-    # computing Nyquist frequency
+    # computing frequencies
     sampling_freq = cnt.info['sfreq']
-    nyquist_freq = sampling_freq / 2
+    init_freq = 0.1
+    stop_freq = sampling_freq / 2 - 0.1
 
     # cut away DC and too high frequencies
     cnt = mne_apply(
-        lambda x: bandpass_cnt(x, 0.1, nyquist_freq, sampling_freq),
+        lambda x: bandpass_cnt(x, init_freq, stop_freq, sampling_freq),
         cnt
     )
     return cnt
