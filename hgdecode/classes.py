@@ -10,7 +10,10 @@ from numpy import newaxis
 from numpy import concatenate
 from keras.utils import Sequence
 from keras.utils import to_categorical
+from keras.callbacks import Callback
 from hgdecode.utils import print_manager
+from hgdecode.utils import get_metrics
+from sklearn.metrics import confusion_matrix
 
 
 class FilterBank(object):
@@ -473,3 +476,87 @@ class EEGDataGenerator(Sequence):
 
         # updating next_to_unpack
         self.next_to_unpack += 1
+
+
+# TODO: MetricsTracker class with: __init__(), on_epoch_end(), and
+#  on_train_end(); the first one initializes the class, the second one
+#  evaluate the model and print a report, the third one plots train,
+#  validation and test curve and saves it
+class MetricsTracker(Callback):
+    def __init__(self,
+                 dataset,
+                 epochs,
+                 n_classes,
+                 batch_size,
+                 plot_paths_dict):
+        # allocating inputs as properties
+        self.dataset = dataset
+        self.epochs = epochs
+        self.n_classes = n_classes
+        self.batch_size = batch_size
+        self.plot_paths_dict = plot_paths_dict
+
+        # pre-allocating train, valid and test dicts with loss and conf_mtx
+        self.train = {'loss': zeros(epochs),
+                      'conf_mtx': zeros((epochs, n_classes, n_classes))}
+        self.valid = {'loss': zeros(epochs),
+                      'conf_mtx': zeros((epochs, n_classes, n_classes))}
+        self.test = {'loss': zeros(epochs),
+                     'conf_mtx': zeros((epochs, n_classes, n_classes))}
+
+        # calling the super class constructor
+        Callback.__init__(self)
+
+    def on_epoch_end(self, epoch, logs=None):
+        # computing loss and other metrics for train, valid & test
+        score_train = self.model.evaluate(X=self.dataset.X_train,
+                                          y=self.dataset.y_train,
+                                          batch_size=self.batch_size,
+                                          verbose=0)
+        score_valid = self.model.evaluate(X=self.dataset.X_valid,
+                                          y=self.dataset.y_valid,
+                                          batch_size=self.batch_size,
+                                          verbose=0)
+        score_test = self.model.evaluate(X=self.dataset.X_test,
+                                         y=self.dataset.y_test,
+                                         batch_size=self.batch_size,
+                                         verbose=0)
+        # getting losses from scores
+        self.train['loss'][epoch] = self.get_loss_from_score(score_train)
+        self.valid['loss'][epoch] = self.get_loss_from_score(score_valid)
+        self.test['loss'][epoch] = self.get_loss_from_score(score_test)
+
+        # computing predictions for train, valid & test
+        y_pred_train = self.model.predict(X=self.dataset.X_train,
+                                          batch_size=self.batch_size,
+                                          verbose=0).argmax(axis=1)
+        y_pred_valid = self.model.predict(X=self.dataset.X_valid,
+                                          batch_size=self.batch_size,
+                                          verbose=0).argmax(axis=1)
+        y_pred_test = self.model.predict(X=self.dataset.X_test,
+                                         batch_size=self.batch_size,
+                                         verbose=0).argmax(axis=1)
+
+        # from prediction, computing confusion matrix
+        self.train['conf_mtx'][epoch, ...] = confusion_matrix(
+            y_pred=y_pred_train, y_true=self.dataset.y_train.argmax(axis=1)
+        )
+        self.valid['conf_mtx'][epoch, ...] = confusion_matrix(
+            y_pred_valid, self.dataset.y_valid.argmax(axis=1)
+        )
+        self.test['conf_mtx'][epoch, ...] = confusion_matrix(
+            y_pred_test, self.dataset.y_test.argmax(axis=1)
+        )
+
+        # printing information about this epoch
+        accuracy, sensitivity, specificity = get_metrics(y_true=y_test)
+
+    def on_train_end(self, logs=None):
+        pass
+
+    @staticmethod
+    def get_loss_from_score(score):
+        if score is list:
+            return score[0]
+        else:
+            return score

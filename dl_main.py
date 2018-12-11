@@ -100,20 +100,19 @@ for subject_id in subject_ids:
         dropout_rate=0.5,  # Schirrmeister: 0.5
         learning_rate=0.001,  # Schirrmeister: ?, still not supported
         batch_size=32,  # Schirrmeister: 512
-        epochs=1000,  # Schirrmeister: ?
+        epochs=3,  # Schirrmeister: ?
         early_stopping=False,  # Schirrmeister: ?
         monitor='val_acc',  # Schirrmeister: ?
         min_delta=0.0001,  # Schirrmeister: ?
         patience=5,  # Schirrmeister: ?
         loss='categorical_crossentropy',  # Schirrmeister: ad hoc
         optimizer='Adam',  # Schirrmeister: Adam
-        metrics=['accuracy'],  # Schirrmeister: ?
+        metrics=None,  # Schirrmeister: ['accuracy']
         shuffle=True,  # Schirrmeister: ?
         crop_sample_size=None,  # Schirrmeister: 1125
         crop_step=None,  # Schirrmeister: 1
 
         # other parameters
-        verbose=True,
         subject_id=subject_id,
         data_generator=False,  # Schirrmeister: True
         save_model_at_each_epoch=False

@@ -160,3 +160,30 @@ def create_log(results_dir=None,
         'double-dashed',
         bottom_return=1
     )
+
+
+def get_metrics(y_true, y_pred):
+    # allocating
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+
+    # computing
+    for i in range(len(y_true)):
+        if y_pred[i] == y_true[i] == 1:
+            TP += 1
+        if y_pred[i] == 1 and y_pred[i] != y_true[i]:
+            FP += 1
+        if y_pred[i] == y_true[i] == 0:
+            TN += 1
+        if y_true[i] == 0 and y_pred[i] != y_true[i]:
+            FN += 1
+
+    # determining
+    accuracy = (TP + TN) / (TP + TN + FP + FN)
+    sensitivity = TP / (TP + FN)
+    specificity = TN / (TN + FP)
+
+    # returning
+    return accuracy, sensitivity, specificity

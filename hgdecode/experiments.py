@@ -8,11 +8,13 @@ from itertools import combinations
 from numpy.random import RandomState
 from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
+from sklearn.metrics import confusion_matrix
 from multiprocessing import cpu_count
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from hgdecode.classes import FilterBank
+from hgdecode.classes import MetricsTracker
 from hgdecode.classes import EEGDataGenerator
 from braindecode.datautil.iterators import get_balanced_batches
 
@@ -268,15 +270,10 @@ class DLExperiment(object):
                  crop_step=None,
 
                  # other parameters
-                 verbose=False,
                  subject_id=1,
                  data_generator=False,
                  workers=cpu_count(),
                  save_model_at_each_epoch=False):
-        # resolving PEP8 issue throwing on mutable input arguments
-        if metrics is 'None':
-            metrics = ['accuracy']
-
         # non-default inputs
         self.dataset = dataset
         self.model_name = model_name
@@ -304,7 +301,6 @@ class DLExperiment(object):
             self.crop_step = crop_step
 
         # other parameters
-        self.verbose = verbose
         self.subject_id = subject_id
         self.data_generator = data_generator
         self.workers = workers
@@ -314,6 +310,7 @@ class DLExperiment(object):
         self.model_picture_path = None
         self.model_report_path = None
         self.train_report_path = None
+        self.plot_paths_dict = None
         self.h5_models_dir = None
         self.h5_model_path = None
         self.paths_manager()
@@ -380,6 +377,12 @@ class DLExperiment(object):
         self.model_picture_path = join(self.results_dir, 'model_picture.png')
         self.model_report_path = join(self.results_dir, 'model_report.txt')
         self.train_report_path = join(self.results_dir, 'train_report.csv')
+        self.plot_paths_dict = {
+            'loss': join(self.results_dir, 'loss_plot.png'),
+            'accuracy': join(self.results_dir, 'accuracy_plot.png'),
+            'sensitivity': join(self.results_dir, 'sensitivity_plot.png'),
+            'specificity': join(self.results_dir, 'specificity_plot.png'),
+        }
 
         # if the user want to save the model on each epoch...
         if self.save_model_at_each_epoch:
@@ -419,7 +422,7 @@ class DLExperiment(object):
             esc = EarlyStopping(monitor=self.monitor,
                                 min_delta=self.min_delta,
                                 patience=self.patience,
-                                verbose=self.verbose)
+                                verbose=1)
 
             # creating the callbacks array
             callbacks = [mcp, csv, esc]
@@ -452,7 +455,7 @@ class DLExperiment(object):
                                      use_multiprocessing=True,
                                      workers=self.workers,
                                      epochs=epochs,
-                                     verbose=self.verbose,
+                                     verbose=1,
                                      callbacks=callbacks)
         else:
             # creating crops
@@ -464,6 +467,17 @@ class DLExperiment(object):
             # parsing y to categorical
             self.dataset.to_categorical()
 
+            # TODO: MetricsTracker for Data Generation routine
+            # creating a MetricsTracker instance
+            callbacks.append(
+                MetricsTracker(
+                    self.dataset,
+                    self.epochs,
+                    self.n_classes,
+                    self.plot_paths_dict
+                )
+            )
+
             # training!
             print_manager('RUNNING TRAINING', 'double-dashed')
             self.model.fit(x=self.dataset.X_train,
@@ -472,7 +486,7 @@ class DLExperiment(object):
                                             self.dataset.y_valid),
                            batch_size=self.batch_size,
                            epochs=epochs,
-                           verbose=self.verbose,
+                           verbose=1,
                            callbacks=callbacks,
                            shuffle=self.shuffle)
         print_manager('', 'last', bottom_return=1)
@@ -481,16 +495,31 @@ class DLExperiment(object):
         #  to train the epochs hyperparameter.
 
     def test(self):
+        # TODO: evaluate_generator if data_generator is True
         print_manager('RUNNING TESTING', 'double-dashed')
-
-        # computing loss and accuracy
+        # computing loss and other metrics
         score = self.model.evaluate(
             self.dataset.X_test,
             self.dataset.y_test,
-            verbose=self.verbose
+            verbose=1
         )
 
-        # printing results
-        print('Test loss:', score[0])
-        print('Test accuracy:', score[1])
+        if self.metrics is not None:
+            print('Test loss:', score[0])
+            for idx, val in enumerate(self.metrics):
+                print('Test {:s}: {:f}'.format(val, score[idx + 1]))
+        else:
+            print('Test loss:', score)
+
+        # making predictions on X_test with final model and getting also
+        # y_test from memory; parsing both back from categorical
+        y_pred = self.model.predict(self.dataset.X_test).argmax(axis=1)
+        if self.data_generator is True:
+            y_test = self.dataset.y_test
+        else:
+            y_test = self.dataset.y_test.argmax(axis=1)
+
+        # computing confusion matrix
+        conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
+        print("Confusion matrix:\n", conf_mtx)
         print_manager('', 'last', bottom_return=2)
