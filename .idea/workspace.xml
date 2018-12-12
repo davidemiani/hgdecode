@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
+<<<<<<< Updated upstream
     <list default="true" id="12a5c9c3-f719-4063-b578-8ab6a85137ce" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/dictionaries/davidemiani.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/davidemiani.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/hgdecode/classes.py" beforeDir="false" afterPath="$PROJECT_DIR$/hgdecode/classes.py" afterDir="false" />
     </list>
+=======
+    <list default="true" id="12a5c9c3-f719-4063-b578-8ab6a85137ce" name="Default Changelist" comment="" />
+>>>>>>> Stashed changes
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,8 +70,16 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/hgdecode/loaders.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
             <state relative-caret-position="1548">
               <caret line="104" column="54" selection-start-line="104" selection-start-column="54" selection-end-line="104" selection-end-column="54" />
+=======
+            <state relative-caret-position="2231">
+              <caret line="562" lean-forward="true" selection-start-line="562" selection-end-line="562" />
+              <folding>
+                <element signature="e#0#22#0" expanded="true" />
+              </folding>
+>>>>>>> Stashed changes
             </state>
           </provider>
         </entry>
@@ -393,12 +405,12 @@
       <workItem from="1544379635940" duration="918000" />
       <workItem from="1544383324794" duration="4187000" />
       <workItem from="1544392346114" duration="9897000" />
-      <workItem from="1544479597081" duration="13335000" />
+      <workItem from="1544479597081" duration="13482000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="118582000" />
+    <option name="totallyTimeSpent" value="118729000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -692,10 +704,17 @@ self.model.summary()</expression-string>
     </entry>
     <entry file="file://$PROJECT_DIR$/hgdecode/classes.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< Updated upstream
         <state relative-caret-position="267">
           <caret line="518" column="29" selection-start-line="518" selection-start-column="29" selection-end-line="518" selection-end-column="29" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
+=======
+        <state relative-caret-position="2231">
+          <caret line="562" lean-forward="true" selection-start-line="562" selection-end-line="562" />
+          <folding>
+            <element signature="e#0#22#0" expanded="true" />
+>>>>>>> Stashed changes
           </folding>
         </state>
       </provider>
