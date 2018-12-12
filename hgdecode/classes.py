@@ -1,6 +1,5 @@
 import sys
 import time
-from numpy import mean
 from numpy import ceil
 from numpy import log10
 from numpy import floor
@@ -512,11 +511,11 @@ class MetricsTracker(Callback):
         Callback.__init__(self)
 
     def on_epoch_end(self, epoch, logs=None):
-        print('Evaluating:')
+        print('Computing statistics on this epoch:')
         epoch_string_length = len(str(self.epochs)) * 2 + 1
         progress_bar_length = 30 + epoch_string_length + 1
-        progress_bar = ProgressBar(5, width=progress_bar_length)
-        progress_bar.update(0)
+        progress_bar = ProgressBar(target=5, width=progress_bar_length)
+        progress_bar.update(current=0, message='evaluating test')
 
         # loss for training and validation is stored in logs dict
         self.train['loss'][epoch] = logs['loss']
@@ -533,26 +532,30 @@ class MetricsTracker(Callback):
             self.test['loss'][epoch] = score[0]
         else:
             self.test['loss'][epoch] = score
-        progress_bar.update(1)
 
-        # computing predictions for train, valid & test
+        # predicting train
+        progress_bar.update(current=1, message='predicting train')
         y_true_train = self.dataset.y_train.argmax(axis=1)
         y_pred_train = self.model.predict(x=self.dataset.X_train,
                                           batch_size=self.batch_size,
                                           verbose=0).argmax(axis=1)
-        progress_bar.update(2)
+
+        # predicting valid
+        progress_bar.update(current=2, message='predicting valid')
         y_true_valid = self.dataset.y_valid.argmax(axis=1)
         y_pred_valid = self.model.predict(x=self.dataset.X_valid,
                                           batch_size=self.batch_size,
                                           verbose=0).argmax(axis=1)
-        progress_bar.update(3)
+
+        # predicting test
+        progress_bar.update(current=3, message='predicting test')
         y_true_test = self.dataset.y_test.argmax(axis=1)
         y_pred_test = self.model.predict(x=self.dataset.X_test,
                                          batch_size=self.batch_size,
                                          verbose=0).argmax(axis=1)
-        progress_bar.update(4)
 
         # from prediction, computing confusion matrix
+        progress_bar.update(current=4, message='computing conf mtx')
         self.train['conf_mtx'][epoch, ...] = confusion_matrix(
             y_pred=y_pred_train, y_true=y_true_train
         )
@@ -562,7 +565,12 @@ class MetricsTracker(Callback):
         self.test['conf_mtx'][epoch, ...] = confusion_matrix(
             y_pred=y_pred_test, y_true=y_true_test
         )
-        progress_bar.update(5)
+
+        # updating prog bar for the end
+        progress_bar.update(current=5, message='statistics completed')
+        print('train loss: {0:.4f}'.format(self.train['loss'][epoch]),
+              'valid loss: {0:.4f}'.format(self.valid['loss'][epoch]),
+              'test loss: {0:.4f}'.format(self.test['loss'][epoch]))
 
     def on_train_end(self, logs=None):
         pass
@@ -588,17 +596,10 @@ class ProgressBar(object):
         interval: Minimum visual progress update interval (in seconds).
     """
 
-    def __init__(self, target, width=30, verbose=1, interval=0.05,
-                 stateful_metrics=None):
+    def __init__(self, target, width=30, interval=0.05):
         self.target = target
         self.width = width
-        self.verbose = verbose
         self.interval = interval
-        if stateful_metrics:
-            self.stateful_metrics = set(stateful_metrics)
-        else:
-            self.stateful_metrics = set()
-
         self._dynamic_display = ((hasattr(sys.stdout, 'isatty') and
                                   sys.stdout.isatty()) or
                                  'ipykernel' in sys.modules)
@@ -608,127 +609,80 @@ class ProgressBar(object):
         self._start = time.time()
         self._last_update = 0
 
-    def update(self, current, values=None):
+    def update(self, current, message=''):
         """Updates the progress bar.
         # Arguments
             current: Index of current step.
-            values: List of tuples:
-                `(name, value_for_last_step)`.
-                If `name` is in `stateful_metrics`,
-                `value_for_last_step` will be displayed as-is.
-                Else, an average of the metric over time will be displayed.
+            message: Message to display at the end of the bar.
         """
-        values = values or []
-        for k, v in values:
-            if k not in self.stateful_metrics:
-                if k not in self._values:
-                    self._values[k] = [v * (current - self._seen_so_far),
-                                       current - self._seen_so_far]
-                else:
-                    self._values[k][0] += v * (current - self._seen_so_far)
-                    self._values[k][1] += (current - self._seen_so_far)
-            else:
-                # Stateful metrics output a numeric value.  This representation
-                # means "take an average from a single value" but keeps the
-                # numeric formatting.
-                self._values[k] = [v, 1]
-        self._seen_so_far = current
-
         now = time.time()
         info = ' - %.0fs' % (now - self._start)
-        if self.verbose == 1:
-            if (now - self._last_update < self.interval and
-                    self.target is not None and current < self.target):
-                return
 
-            prev_total_width = self._total_width
-            if self._dynamic_display:
-                sys.stdout.write('\b' * prev_total_width)
-                sys.stdout.write('\r')
-            else:
-                sys.stdout.write('\n')
+        if (now - self._last_update < self.interval and
+                self.target is not None and current < self.target):
+            return
 
-            if self.target is not None:
-                numdigits = int(floor(log10(self.target))) + 1
-                barstr = '%%%dd/%d [' % (numdigits, self.target)
-                bar = barstr % current
-                prog = float(current) / self.target
-                prog_width = int(self.width * prog)
-                if prog_width > 0:
-                    bar += ('=' * (prog_width - 1))
-                    if current < self.target:
-                        bar += '>'
-                    else:
-                        bar += '='
-                bar += ('.' * (self.width - prog_width))
-                bar += ']'
-            else:
-                bar = '%7d/Unknown' % current
+        prev_total_width = self._total_width
+        if self._dynamic_display:
+            sys.stdout.write('\b' * prev_total_width)
+            sys.stdout.write('\r')
+        else:
+            sys.stdout.write('\n')
 
-            self._total_width = len(bar)
-            sys.stdout.write(bar)
-
-            if current:
-                time_per_unit = (now - self._start) / current
-            else:
-                time_per_unit = 0
-            if self.target is not None and current < self.target:
-                eta = time_per_unit * (self.target - current)
-                if eta > 3600:
-                    eta_format = ('%d:%02d:%02d' %
-                                  (eta // 3600, (eta % 3600) // 60, eta % 60))
-                elif eta > 60:
-                    eta_format = '%d:%02d' % (eta // 60, eta % 60)
+        if self.target is not None:
+            numdigits = int(floor(log10(self.target))) + 1
+            barstr = '%%%dd/%d [' % (numdigits, self.target)
+            bar = barstr % current
+            prog = float(current) / self.target
+            prog_width = int(self.width * prog)
+            if prog_width > 0:
+                bar += ('=' * (prog_width - 1))
+                if current < self.target:
+                    bar += '>'
                 else:
-                    eta_format = '%ds' % eta
+                    bar += '='
+            bar += ('.' * (self.width - prog_width))
+            bar += ']'
+        else:
+            bar = '%7d/Unknown' % current
 
-                info = ' - ETA: %s' % eta_format
+        self._total_width = len(bar)
+        sys.stdout.write(bar)
+
+        if current:
+            time_per_unit = (now - self._start) / current
+        else:
+            time_per_unit = 0
+        if self.target is not None and current < self.target:
+            eta = time_per_unit * (self.target - current)
+            if eta > 3600:
+                eta_format = ('%d:%02d:%02d' %
+                              (eta // 3600, (eta % 3600) // 60, eta % 60))
+            elif eta > 60:
+                eta_format = '%d:%02d' % (eta // 60, eta % 60)
             else:
-                if time_per_unit >= 1:
-                    info += ' %.0fs/step' % time_per_unit
-                elif time_per_unit >= 1e-3:
-                    info += ' %.0fms/step' % (time_per_unit * 1e3)
-                else:
-                    info += ' %.0fus/step' % (time_per_unit * 1e6)
+                eta_format = '%ds' % eta
 
-            for k in self._values:
-                info += ' - %s:' % k
-                if isinstance(self._values[k], list):
-                    avg = mean(
-                        self._values[k][0] / max(1, self._values[k][1]))
-                    if abs(avg) > 1e-3:
-                        info += ' %.4f' % avg
-                    else:
-                        info += ' %.4e' % avg
-                else:
-                    info += ' %s' % self._values[k]
+            info = ' - ETA: %s' % eta_format
+        else:
+            if time_per_unit >= 1:
+                info += ' %.0fs/step' % time_per_unit
+            elif time_per_unit >= 1e-3:
+                info += ' %.0fms/step' % (time_per_unit * 1e3)
+            else:
+                info += ' %.0fus/step' % (time_per_unit * 1e6)
 
-            self._total_width += len(info)
-            if prev_total_width > self._total_width:
-                info += (' ' * (prev_total_width - self._total_width))
+        if message is not '':
+            info += ' - ' + message
 
-            if self.target is not None and current >= self.target:
-                info += '\n'
+        self._total_width += len(info)
+        if prev_total_width > self._total_width:
+            info += (' ' * (prev_total_width - self._total_width))
 
-            sys.stdout.write(info)
-            sys.stdout.flush()
+        if self.target is not None and current >= self.target:
+            info += '\n'
 
-        elif self.verbose == 2:
-            if self.target is None or current >= self.target:
-                for k in self._values:
-                    info += ' - %s:' % k
-                    avg = mean(
-                        self._values[k][0] / max(1, self._values[k][1]))
-                    if avg > 1e-3:
-                        info += ' %.4f' % avg
-                    else:
-                        info += ' %.4e' % avg
-                info += '\n'
-
-                sys.stdout.write(info)
-                sys.stdout.flush()
+        sys.stdout.write(info)
+        sys.stdout.flush()
 
         self._last_update = now
-
-    def add(self, n, values=None):
-        self.update(self._seen_so_far + n, values)

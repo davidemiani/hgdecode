@@ -12,7 +12,7 @@ now_dir = ''
 
 
 def dash_printer(input_string='', manual_input=32):
-    print('-' * len(input_string) + '-' * manual_input)
+    sys.stdout.write('-' * len(input_string) + '-' * manual_input + '\n')
 
 
 def print_manager(input_string='',
@@ -21,7 +21,7 @@ def print_manager(input_string='',
                   bottom_return=None):
     # top return
     if top_return is not None:
-        print('\n' * (top_return - 1))
+        sys.stdout.write('\n' * top_return)
 
     # input_string
     if print_style == 'normal':
@@ -46,7 +46,7 @@ def print_manager(input_string='',
 
     # bottom return
     if bottom_return is not None:
-        print('\n' * (bottom_return - 1))
+        sys.stdout.write('\n' * bottom_return)
 
 
 def datetime_dir_format():
@@ -134,7 +134,8 @@ def create_log(results_dir=None,
         elif platform == 'darwin':  # macOSX
             system('open ' + log_file_path.replace(' ', '\ '))
         else:
-            print('platform {:s} still not supported'.format(platform))
+            sys.stdout.write('platform {:s} still not supported'.format(
+                platform))
 
         # setting the logging object configuration
         log.basicConfig(
@@ -147,7 +148,8 @@ def create_log(results_dir=None,
         # setting the logging object configuration
         log.basicConfig(
             format='%(asctime)s | %(levelname)s: %(message)s',
-            level=log.DEBUG
+            level=log.DEBUG,
+            stream=sys.stdout
         )
 
     # printing current cycle information
