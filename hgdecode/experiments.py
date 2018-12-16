@@ -10,21 +10,21 @@ from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
 from sklearn.metrics import confusion_matrix
 from multiprocessing import cpu_count
+
+# Deep Learning
+from hgdecode import models
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from hgdecode.classes import FilterBank
 from hgdecode.classes import MetricsTracker
 from hgdecode.classes import EEGDataGenerator
-from braindecode.datautil.iterators import get_balanced_batches
-
-# Deep Learning
-from hgdecode.models import import_model
 
 # Machine Learning
+from hgdecode.classes import FilterBank
 from hgdecode.fbcsprlda import BinaryFBCSP
 from hgdecode.fbcsprlda import FBCSP
 from hgdecode.fbcsprlda import MultiClassWeightedVoting
+from braindecode.datautil.iterators import get_balanced_batches
 
 
 class FBCSPrLDAExperiment(object):
@@ -317,7 +317,12 @@ class DLExperiment(object):
 
         # importing model
         print_manager('IMPORTING & COMPILING MODEL', 'double-dashed')
-        self.model = import_model(self)
+        model_inputs_str = ', '.join([str(i) for i in [self.n_classes,
+                                                       self.n_channels,
+                                                       self.n_samples,
+                                                       self.dropout_rate]])
+        expression = 'models.' + self.model_name + '(' + model_inputs_str + ')'
+        self.model = eval(expression)
 
         # compiling model
         self.model.compile(loss=self.loss,

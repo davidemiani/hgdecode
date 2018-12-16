@@ -24,37 +24,6 @@ from keras.regularizers import l1_l2
 #  parameter individually
 
 
-# %% IMPORT MODEL (add here a new if clauses for each new model inserted)
-def import_model(dl_experiment):
-    if dl_experiment.model_name == 'DeepConvNet':
-        fun = DeepConvNet
-    elif dl_experiment.model_name == 'DeepConvNet_500Hz':
-        fun = DeepConvNet_500Hz
-    elif dl_experiment.model_name == 'DeepConvNet_Davide':
-        fun = DeepConvNet_Davide
-    elif dl_experiment.model_name == 'ShallowConvNet':
-        fun = ShallowConvNet
-    elif dl_experiment.model_name == 'EEGNet':
-        fun = EEGNet
-    elif dl_experiment.model_name == 'EEGNet_SSVEP':
-        fun = EEGNet_SSVEP
-    elif dl_experiment.model_name == 'EEGNet_old':
-        fun = EEGNet_old
-    elif dl_experiment.model_name == 'DeepConvNet_500':
-        fun = DeepConvNet_500Hz
-    else:
-        raise ValueError('specified model_name is not a valid one;\n' +
-                         'consider to add it in hgdecode>models.py')
-    # creating the model with the chosen architecture
-    model = fun(
-        n_classes=dl_experiment.n_classes,
-        n_channels=dl_experiment.n_channels,
-        n_samples=dl_experiment.crop_sample_size,
-        dropout_rate=dl_experiment.dropout_rate
-    )
-    return model
-
-
 # %% DEEP CONV NET
 def DeepConvNet(n_classes=4,
                 n_channels=64,
