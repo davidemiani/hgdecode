@@ -107,7 +107,6 @@ for subject_id in subject_ids:
         patience=5,  # Schirrmeister: ?
         loss='categorical_crossentropy',  # Schirrmeister: ad hoc
         optimizer='Adam',  # Schirrmeister: Adam
-        metrics=None,  # Schirrmeister: ['accuracy']
         shuffle=True,  # Schirrmeister: ?
         crop_sample_size=None,  # Schirrmeister: 1125
         crop_step=None,  # Schirrmeister: 1

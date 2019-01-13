@@ -264,7 +264,6 @@ class DLExperiment(object):
                  patience=5,
                  loss='categorical_crossentropy',
                  optimizer='Adam',
-                 metrics='None',
                  shuffle='False',
                  crop_sample_size=None,
                  crop_step=None,
@@ -291,7 +290,6 @@ class DLExperiment(object):
         self.patience = patience
         self.loss = loss
         self.optimizer = optimizer
-        self.metrics = metrics
         self.shuffle = shuffle
         if crop_sample_size is None:
             self.crop_sample_size = self.n_samples
@@ -327,15 +325,15 @@ class DLExperiment(object):
         # compiling model
         self.model.compile(loss=self.loss,
                            optimizer=self.optimizer,
-                           metrics=self.metrics)
+                           metrics=['accuracy'])
         self.model.summary()
         print_manager('DONE!!', print_style='last', bottom_return=1)
 
     def __repr__(self):
-        return '<DLExperiment with model:{:s}>'.format(self.model_name)
+        return '<DLExperiment with model: {:s}>'.format(self.model_name)
 
     def __str__(self):
-        return '<DLExperiment with model:{:s}>'.format(self.model_name)
+        return '<DLExperiment with model: {:s}>'.format(self.model_name)
 
     def __len__(self):
         return len(self.dataset)
@@ -384,9 +382,7 @@ class DLExperiment(object):
         self.train_report_path = join(self.results_dir, 'train_report.csv')
         self.plot_paths_dict = {
             'loss': join(self.results_dir, 'loss_plot.png'),
-            'accuracy': join(self.results_dir, 'accuracy_plot.png'),
-            'sensitivity': join(self.results_dir, 'sensitivity_plot.png'),
-            'specificity': join(self.results_dir, 'specificity_plot.png'),
+            'acc': join(self.results_dir, 'acc_plot.png')
         }
 
         # if the user want to save the model on each epoch...
@@ -510,12 +506,8 @@ class DLExperiment(object):
             verbose=1
         )
 
-        if self.metrics is not None:
-            print('Test loss:', score[0])
-            for idx, val in enumerate(self.metrics):
-                print('Test {:s}: {:f}'.format(val, score[idx + 1]))
-        else:
-            print('Test loss:', score)
+        print('Test loss:', score[0])
+        print('Test  acc:', score[1])
 
         # making predictions on X_test with final model and getting also
         # y_test from memory; parsing both back from categorical

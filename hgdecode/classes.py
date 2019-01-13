@@ -501,11 +501,11 @@ class MetricsTracker(Callback):
 
         # pre-allocating train, valid and test dicts with loss and conf_mtx
         self.train = {'loss': zeros(epochs),
-                      'conf_mtx': zeros((epochs, n_classes, n_classes))}
+                      'acc': zeros(epochs)}
         self.valid = {'loss': zeros(epochs),
-                      'conf_mtx': zeros((epochs, n_classes, n_classes))}
+                      'acc': zeros(epochs)}
         self.test = {'loss': zeros(epochs),
-                     'conf_mtx': zeros((epochs, n_classes, n_classes))}
+                     'acc': zeros(epochs)}
 
         # calling the super class constructor
         Callback.__init__(self)
