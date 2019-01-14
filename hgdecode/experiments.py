@@ -420,8 +420,8 @@ class DLExperiment(object):
         # statistics_dir is: .../results/hgdecode/dl/model/datetime/statistics
         statistics_dir = join(datetime_results_dir, 'statistics')
 
-        # figures_dir is: .../results/hgdecode/dl/model/datetime/stat/figures
-        figures_dir = join(statistics_dir, 'figures')
+        # figures_dir is: .../results/hgdecode/dl/model/dt/stat/figures/subject
+        figures_dir = join(statistics_dir, 'figures', subj_str)
 
         # tables_dir is: .../results/hgdecode/dl/model/datetime/stat/tables
         tables_dir = join(statistics_dir, 'tables')

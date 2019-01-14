@@ -1,3 +1,4 @@
+import csv
 import sys
 import datetime
 import logging as log
@@ -162,3 +163,14 @@ def create_log(results_dir=None,
         'double-dashed',
         bottom_return=1
     )
+
+
+def csv_manager(csv_path, line):
+    if not exists(csv_path):
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.writer(f, delimiter=',')
+            writer.writerows([line])
+    else:
+        with open(csv_path, 'a', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerows([line])

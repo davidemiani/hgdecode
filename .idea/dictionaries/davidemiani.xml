@@ -3,6 +3,7 @@
     <words>
       <w>barstr</w>
       <w>dataset</w>
+      <w>davidemiani</w>
       <w>frac</w>
       <w>ipykernel</w>
       <w>isatty</w>
@@ -11,6 +12,8 @@
       <w>pred</w>
       <w>preprocess</w>
       <w>prog</w>
+      <w>seaborn</w>
+      <w>whitegrid</w>
     </words>
   </dictionary>
 </component>

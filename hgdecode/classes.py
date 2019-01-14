@@ -1,6 +1,10 @@
 import sys
 import time
+import matplotlib.pyplot as plt
+from pylab import savefig
+from numpy import std
 from numpy import ceil
+from numpy import mean
 from numpy import log10
 from numpy import floor
 from numpy import zeros
@@ -11,14 +15,19 @@ from numpy import repeat
 from numpy import append
 from numpy import random
 from numpy import newaxis
+from numpy import linspace
 from numpy import setdiff1d
 from numpy import concatenate
 from numpy.random import RandomState
 from pickle import dump
+from pickle import load
+from os.path import join
+from os.path import basename
 from collections import OrderedDict
 from keras.utils import Sequence
 from keras.utils import to_categorical
 from keras.callbacks import Callback
+from hgdecode.utils import csv_manager
 from hgdecode.utils import print_manager
 from sklearn.metrics import confusion_matrix
 from braindecode.datautil.iterators import get_balanced_batches
@@ -765,18 +774,297 @@ class CrossValidation(object):
 
     @staticmethod
     def cross_validate(subj_results_dir, figures_dir, tables_dir):
-        from os.path import join
-        from os import listdir
-        from pickle import load
+        # getting fold file paths
+        file_paths = CrossValidation.fold_file_paths(subj_results_dir)
 
-        # getting all fold directories path
+        # figures
+        CrossValidation.figures_manager(file_paths, figures_dir)
+
+        # tables
+        CrossValidation.tables_manager(file_paths, tables_dir)
+
+    @staticmethod
+    def fold_file_paths(subj_results_dir):
+        from os import listdir
+        from os.path import join
+        # getting all fold directories paths
         fold_list = listdir(subj_results_dir)
         fold_list.sort()
 
-        # getting all pickle results path
-        files_path = [join(subj_results_dir, fold_name, 'fold_stats.pickle')
+        # getting all pickle results paths
+        file_paths = [join(subj_results_dir, fold_name, 'fold_stats.pickle')
                       for fold_name in fold_list]
-        for idx, file in enumerate(files_path):
+
+        # returning fold file paths
+        return file_paths
+
+    @staticmethod
+    def load_results(file_paths, loss_acc, train_valid):
+        # opening the first file to get n_epochs
+        with open(file_paths[0], 'rb') as f:
+            results = load(f)
+        n_epochs = len(results[train_valid][loss_acc])
+
+        # getting also n_folds
+        n_folds = len(file_paths)
+
+        # pre-allocating numpy array
+        results = zeros([n_folds, n_epochs])
+
+        # filling all results array
+        for idx, file in enumerate(file_paths):
+            # opening current results file
+            with open(file, 'rb') as f:
+                all_results = load(f)
+
+            # appending loss and accuracy for this file
+            results[idx, :] = all_results[train_valid][loss_acc]
+
+        # returning results
+        return results
+
+    @staticmethod
+    def figures_manager(file_paths, figures_dir):
+        # plotting train loss
+        CrossValidation.internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='loss',
+            train_valid='train'
+        )
+
+        # plotting train accuracy
+        CrossValidation.internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='acc',
+            train_valid='train'
+        )
+
+        # plotting validation loss
+        CrossValidation.internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='loss',
+            train_valid='valid'
+        )
+
+        # plotting validation accuracy
+        CrossValidation.internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='acc',
+            train_valid='valid'
+        )
+
+        # plotting loss (both training and validation)
+        CrossValidation.comparison_internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='loss',
+            use_std=False
+        )
+
+        # plotting acc (both training and validation)
+        CrossValidation.comparison_internal_plot(
+            file_paths=file_paths,
+            figures_dir=figures_dir,
+            loss_acc='acc',
+            use_std=False
+        )
+
+    @staticmethod
+    def internal_plot(file_paths,
+                      figures_dir,
+                      loss_acc='loss',
+                      train_valid='train'):
+        # getting subject string and creating plot path
+        subj_str = basename(figures_dir)
+        plot_path = join(figures_dir, subj_str + '_' +
+                         train_valid + '_' + loss_acc)
+
+        # loading y values
+        y = CrossValidation.load_results(file_paths, loss_acc, train_valid)
+        y_mean = mean(y, axis=0)
+        y_std = std(y, axis=0)
+        n = len(y_mean)
+
+        # creating x values
+        x = linspace(1, n, n)
+
+        # setting loss_acc plot properties
+        if loss_acc == 'loss':
+            y_max = ceil(max(y_mean + y_std))
+            y_label = 'loss'
+        elif loss_acc == 'acc':
+            y_max = 1
+            y_label = 'accuracy'
+        else:
+            raise Exception(
+                'loss_acc value "{}" not supported'.format(loss_acc)
+            )
+
+        # setting train_valid plot properties
+        if train_valid == 'train':
+            color = 'red'
+            title = 'training set'
+        elif train_valid == 'valid':
+            color = 'blue'
+            title = 'validation set'
+        else:
+            raise Exception(
+                'train_valid value "{}" not supported'.format(train_valid)
+            )
+
+        # plotting
+        plt.figure(dpi=100, figsize=(12.8, 7.2), facecolor='w', edgecolor='k')
+        plt.style.use('seaborn-whitegrid')
+        plt.plot(x, y_mean, '-', color=color)
+        plt.fill_between(x, y_mean - y_std, y_mean + y_std,
+                         color=color, alpha=0.3333)
+        plt.xlim(1, n)
+        plt.ylim(0, y_max)
+        plt.legend(labels=['mean', r'mean$\pm$std'], fontsize=20, frameon=True)
+        plt.xlabel('epochs', fontsize=25)
+        plt.ylabel(y_label, fontsize=25)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.title(title, fontsize=25)
+
+        # saving figure
+        savefig(plot_path)
+
+    @staticmethod
+    def comparison_internal_plot(file_paths,
+                                 figures_dir,
+                                 loss_acc='loss',
+                                 use_std=False):
+        # getting subject string and creating plot path
+        subj_str = basename(figures_dir)
+        plot_path = join(figures_dir, subj_str + '_' + loss_acc)
+
+        # loading y values
+        y_train = CrossValidation.load_results(file_paths, loss_acc, 'train')
+        y_valid = CrossValidation.load_results(file_paths, loss_acc, 'valid')
+        y_train_mean = mean(y_train, axis=0)
+        y_valid_mean = mean(y_valid, axis=0)
+        if use_std is True:
+            y_train_std = std(y_train, axis=0)
+            y_valid_std = std(y_valid, axis=0)
+        else:
+            y_train_std = 0
+            y_valid_std = 0
+        n = len(y_train_mean)
+
+        # creating x values
+        x = linspace(1, n, n)
+
+        # setting loss_acc plot properties
+        if loss_acc == 'loss':
+            y_max = ceil(max(y_train_mean + y_train_std))
+            y_label = 'loss'
+        elif loss_acc == 'acc':
+            y_max = 1
+            y_label = 'accuracy'
+        else:
+            raise Exception(
+                'loss_acc value "{}" not supported'.format(loss_acc)
+            )
+
+        # determining legend
+        if use_std is True:
+            legend = ['train mean', 'valid mean',
+                      r'train mean$\pm$std', r'valid mean$\pm$std']
+        else:
+            legend = ['train mean', 'valid mean']
+
+        # creating figure
+        plt.figure(dpi=100, figsize=(12.8, 7.2), facecolor='w', edgecolor='k')
+        plt.style.use('seaborn-whitegrid')
+
+        # plotting train
+        plt.plot(x, y_train_mean, '-', color='red')
+        if use_std is True:
+            plt.fill_between(x,
+                             y_train_mean - y_train_std,
+                             y_train_mean + y_train_std,
+                             color='red', alpha=0.3333)
+
+        # plotting test
+        plt.plot(x, y_valid_mean, '-', color='blue')
+        if use_std is True:
+            plt.fill_between(x,
+                             y_valid_mean - y_valid_std,
+                             y_valid_mean + y_valid_std,
+                             color='blue', alpha=0.3333)
+
+        # manipulating other plot properties
+        plt.xlim(1, n)
+        plt.ylim(0, y_max)
+        plt.legend(labels=legend, fontsize=20, frameon=True)
+        plt.xlabel('epochs', fontsize=25)
+        plt.ylabel(y_label, fontsize=25)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.title('training set and validation set comparison', fontsize=25)
+
+        # saving figure
+        savefig(plot_path)
+
+    @staticmethod
+    def tables_manager(file_paths, tables_dir):
+        # pre-allocating a new csv row
+        csv_loss = []
+        csv_acc = []
+
+        # cycling on pickle files
+        for idx, file in enumerate(file_paths):
+            # getting results from pickle file
             with open(file, 'rb') as f:
                 results = load(f)
-            print('fold', idx + 1, 'best epoch:', results['best']['idx'] + 1)
+
+            # appending new values to csv new line
+            csv_loss.append(results['test']['loss'])
+            csv_acc.append(results['test']['acc'])
+
+            # printing information
+            print(
+                'fold', idx + 1,
+                '| best epoch: {}'.format(results['best']['idx'] + 1),
+                '| with loss: {0:.4f}'.format(csv_loss[-1]),
+                '| and acc: {0:.4f}'.format(csv_acc[-1])
+            )
+
+        # computing mean (cross-validation)
+        csv_loss.append(mean(csv_loss))
+        csv_acc.append(mean(csv_acc))
+
+        # printing also this info on mean
+        print(
+            'mean  ',
+            '|', ' ' * 15,
+            '| with loss: {0:.4f}'.format(csv_loss[-1]),
+            '| and acc: {0:.4f}'.format(csv_acc[-1])
+        )
+
+        # creating csv loss and acc paths
+        csv_loss_path = join(tables_dir, 'loss.csv')
+        csv_acc_path = join(tables_dir, 'acc.csv')
+
+        # code to remove out of coding phase
+        from os import remove
+        from os.path import exists
+        if exists(csv_loss_path):
+            remove(csv_loss_path)
+        if exists(csv_acc_path):
+            remove(csv_acc_path)
+
+        # creating csv files in necessary
+        header = ['fold0' + str(x + 1) for x in range(len(file_paths))]
+        header.append('mean')
+        csv_manager(csv_loss_path, header)
+        csv_manager(csv_acc_path, header)
+
+        # adding new row
+        csv_manager(csv_loss_path, csv_loss)
+        csv_manager(csv_acc_path, csv_acc)
