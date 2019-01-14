@@ -562,15 +562,11 @@ class DLExperiment(object):
                            verbose=1,
                            callbacks=callbacks,
                            shuffle=self.shuffle)
-        print_manager('', 'last', bottom_return=1)
-
         # TODO: if validation_frac is 0 or None, not to split train and test
         #  to train the epochs hyperparameter.
 
     def test(self):
         # TODO: evaluate_generator if data_generator is True
-        print_manager('RUNNING TESTING', 'double-dashed')
-
         # loading best net
         self.model.load_weights(self.h5_model_path)
 
@@ -595,4 +591,3 @@ class DLExperiment(object):
         # computing confusion matrix
         conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
         print("Confusion matrix:\n", conf_mtx)
-        print_manager('', 'last', bottom_return=2)

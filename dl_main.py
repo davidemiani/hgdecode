@@ -58,7 +58,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1,)  # 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random seed
 random_seed = RandomState(1234)
@@ -128,7 +128,7 @@ for subject_id in subject_ids:
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=0.001,  # Schirrmeister: ?, still not supported
             batch_size=32,  # Schirrmeister: 512
-            epochs=1000,  # Schirrmeister: ?
+            epochs=2,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?

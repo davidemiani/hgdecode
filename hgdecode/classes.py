@@ -22,6 +22,7 @@ from numpy.random import RandomState
 from pickle import dump
 from pickle import load
 from os.path import join
+from os.path import exists
 from os.path import basename
 from collections import OrderedDict
 from keras.utils import Sequence
@@ -565,7 +566,11 @@ class MetricsTracker(Callback):
                 self.best['acc'] = self.valid['acc'][epoch]
 
     def on_train_end(self, logs=None):
-        print_manager('RUNNING TESTING', 'double-dashed', top_return=1)
+        # printing the end of training
+        print_manager('TRAINING ENDED', 'last', bottom_return=1)
+
+        # printing the start of testing
+        print_manager('RUNNING TESTING', 'double-dashed')
 
         # loading best net
         self.model.load_weights(self.h5_model_path)
@@ -586,7 +591,7 @@ class MetricsTracker(Callback):
 
         # computing confusion matrix
         conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
-        print("Confusion matrix:\n", conf_mtx)
+        print("\nConfusion matrix:\n", conf_mtx)
 
         # creating results dictionary
         results = {
@@ -615,7 +620,7 @@ class MetricsTracker(Callback):
             dump(results, f)
 
         # printing the end
-        print_manager('', 'last', bottom_return=2)
+        print_manager('TESTING ENDED', 'last', bottom_return=1)
 
 
 class ProgressBar(object):
@@ -774,6 +779,9 @@ class CrossValidation(object):
 
     @staticmethod
     def cross_validate(subj_results_dir, figures_dir, tables_dir):
+        # printing the start
+        print_manager('RUNNING CROSS-VALIDATION', 'double-dashed')
+
         # getting fold file paths
         file_paths = CrossValidation.fold_file_paths(subj_results_dir)
 
@@ -782,6 +790,9 @@ class CrossValidation(object):
 
         # tables
         CrossValidation.tables_manager(file_paths, tables_dir)
+
+        # printing the end
+        print_manager('CROSS-VALIDATION ENDED', 'last', bottom_return=1)
 
     @staticmethod
     def fold_file_paths(subj_results_dir):
@@ -1051,19 +1062,20 @@ class CrossValidation(object):
         csv_loss_path = join(tables_dir, 'loss.csv')
         csv_acc_path = join(tables_dir, 'acc.csv')
 
-        # code to remove out of coding phase
-        from os import remove
-        from os.path import exists
-        if exists(csv_loss_path):
-            remove(csv_loss_path)
-        if exists(csv_acc_path):
-            remove(csv_acc_path)
+        # # code to remove out of coding phase
+        # from os import remove
+        # from os.path import exists
+        # if exists(csv_loss_path):
+        #     remove(csv_loss_path)
+        # if exists(csv_acc_path):
+        #     remove(csv_acc_path)
 
         # creating csv files in necessary
-        header = ['fold0' + str(x + 1) for x in range(len(file_paths))]
-        header.append('mean')
-        csv_manager(csv_loss_path, header)
-        csv_manager(csv_acc_path, header)
+        if not exists(csv_loss_path):
+            header = ['fold0' + str(x + 1) for x in range(len(file_paths))]
+            header.append('mean')
+            csv_manager(csv_loss_path, header)
+            csv_manager(csv_acc_path, header)
 
         # adding new row
         csv_manager(csv_loss_path, csv_loss)
