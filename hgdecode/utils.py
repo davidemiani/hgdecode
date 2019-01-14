@@ -112,7 +112,7 @@ def create_log(results_dir=None,
                         now_dir)
 
     # setting subject_results_dir
-    subject_results_dir = join(log_file_dir, subject_id_str)
+    subject_results_dir = join(log_file_dir, 'subj' + subject_id_str)
 
     # touching directories
     touch_dir(log_file_dir)

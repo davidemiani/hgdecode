@@ -500,14 +500,14 @@ class MetricsTracker(Callback):
                  n_classes,
                  batch_size,
                  h5_model_path,
-                 statistics_path):
+                 fold_stats_path):
         # allocating inputs as properties
         self.dataset = dataset
         self.epochs = epochs
         self.n_classes = n_classes
         self.batch_size = batch_size
         self.h5_model_path = h5_model_path
-        self.statistics_path = statistics_path
+        self.fold_stats_path = fold_stats_path
 
         # pre-allocating train, valid and test dicts with loss and conf_mtx
         self.train = {'loss': [],
@@ -607,24 +607,9 @@ class MetricsTracker(Callback):
             }
         }
 
-        # opening pickle file
-        with open(self.statistics_path, 'rb') as file_path_now:
-            fold_statistics = load(file_path_now)
-
-        # updating statistics data
-        fold_statistics.append(results)
-
-        # creating backup
-        backup_dir, backup_file_name = split(self.statistics_path)
-        backup_file_name = splitext(backup_file_name)[0] + '.bak'
-        backup_path = join(backup_dir, backup_file_name)
-        if exists(backup_path):
-            remove(backup_path)
-        rename(self.statistics_path, backup_path)
-
         # dumping and saving
-        with open(self.statistics_path, 'wb') as file_path_then:
-            dump(fold_statistics, file_path_then)
+        with open(self.fold_stats_path, 'wb') as f:
+            dump(results, f)
 
         # printing the end
         print_manager('', 'last', bottom_return=2)

@@ -310,13 +310,21 @@ class DLExperiment(object):
         self.save_model_at_each_epoch = save_model_at_each_epoch
 
         # managing paths
+        self.dl_results_dir = None
+        self.model_results_dir = None
+        self.datetime_results_dir = None
+        self.subj_results_dir = None
+        self.fold_results_dir = None
+        self.statistics_dir = None
+        self.figures_dir = None
+        self.tables_dir = None
         self.model_picture_path = None
         self.model_report_path = None
         self.train_report_path = None
-        self.plot_paths_dict = None
         self.h5_models_dir = None
         self.h5_model_path = None
-        self.statistics_path = None
+        self.log_path = None
+        self.fold_stats_path = None
         self.paths_manager()
 
         # importing model
@@ -373,39 +381,82 @@ class DLExperiment(object):
         return self.dataset.n_samples
 
     def paths_manager(self):
-        model_results_dir = join(self.results_dir, 'dl', self.model_name)
+        # results_dir is: .../results/hgdecode
+        # dl_results_dir is: .../results/hgdecode/dl
+        dl_results_dir = join(self.results_dir, 'dl')
+
+        # model_results_dir is: .../results/hgdecode/dl/model_name
+        model_results_dir = join(dl_results_dir, self.model_name)
+
+        # datetime_results_dir is: .../results/hgdecode/dl/model_name/datetime
         files_in_folder = listdir(model_results_dir)
         files_in_folder.sort()
-        subject_str = str(self.subject_id)
-        if len(subject_str) == 1:
-            subject_str = '0' + subject_str
-        self.results_dir = join(model_results_dir,
-                                files_in_folder[-1],
-                                subject_str)
-        touch_dir(self.results_dir)
-        self.model_picture_path = join(self.results_dir, 'model_picture.png')
-        self.model_report_path = join(self.results_dir, 'model_report.txt')
-        self.train_report_path = join(self.results_dir, 'train_report.csv')
-        self.statistics_path = join(self.results_dir, 'statistics.pickle')
-        self.plot_paths_dict = {
-            'loss': join(self.results_dir, 'loss_plot.png'),
-            'acc': join(self.results_dir, 'acc_plot.png')
-        }
+        datetime_results_dir = join(model_results_dir, files_in_folder[-1])
+
+        # subj_results_dir is: .../results/hgdecode/dl/model/datetime/subject
+        subj_str = str(self.subject_id)
+        if len(subj_str) == 1:
+            subj_str = '0' + subj_str
+        subj_str = 'subj' + subj_str
+        subj_results_dir = join(datetime_results_dir, subj_str)
+
+        # fold_results_dir is .../results/dataset/dl/model/datetime/subj/fold
+        fold_str = str(self.fold_idx + 1)
+        if len(fold_str) == 1:
+            fold_str = '0' + fold_str
+        fold_str = 'fold' + fold_str
+        fold_results_dir = join(subj_results_dir, fold_str)
+
+        # setting on object self
+        self.dl_results_dir = dl_results_dir
+        self.model_results_dir = model_results_dir
+        self.datetime_results_dir = datetime_results_dir
+        self.subj_results_dir = subj_results_dir
+        self.fold_results_dir = fold_results_dir
+
+        # touching only the last directory will be create also the other ones
+        touch_dir(self.fold_results_dir)
+
+        # statistics_dir is: .../results/hgdecode/dl/model/datetime/statistics
+        statistics_dir = join(datetime_results_dir, 'statistics')
+
+        # figures_dir is: .../results/hgdecode/dl/model/datetime/stat/figures
+        figures_dir = join(statistics_dir, 'figures')
+
+        # tables_dir is: .../results/hgdecode/dl/model/datetime/stat/tables
+        tables_dir = join(statistics_dir, 'tables')
+
+        # setting on object self
+        self.statistics_dir = statistics_dir
+        self.figures_dir = figures_dir
+        self.tables_dir = tables_dir
+        touch_dir(figures_dir)
+        touch_dir(tables_dir)
+
+        # files in datetime_results_dir
+        self.model_report_path = join(self.datetime_results_dir,
+                                      'model_report.txt')
+        self.model_picture_path = join(self.datetime_results_dir,
+                                       'model_picture.png')
+
+        # files in subj_results_dir
+        self.log_path = join(self.subj_results_dir, 'log.bin')
+
+        # files in fold_results_dir
+        self.train_report_path = join(self.fold_results_dir,
+                                      'train_report.csv')
+        self.fold_stats_path = join(self.fold_results_dir, 'fold_stats.pickle')
 
         # if the user want to save the model on each epoch...
         if self.save_model_at_each_epoch:
             # ...creating models directory and an iterable name, else...
-            self.h5_models_dir = join(self.results_dir, 'h5_models')
+            self.h5_models_dir = join(self.fold_results_dir, 'h5_models')
             touch_dir(self.h5_models_dir)
             self.h5_model_path = join(self.h5_models_dir, 'net{epoch:02d}.h5')
         else:
-            # pointing to the same results directory
-            self.h5_model_path = join(self.results_dir, 'net_best_val_loss.h5')
-
-        # pre-allocating pickle statistics file with an empty list
-        fold_statistics = []
-        with open(self.statistics_path, 'wb') as file_path:
-            dump(fold_statistics, file_path)
+            # ...pointing to the same results directory
+            self.h5_model_path = join(self.fold_results_dir,
+                                      'net_best_val_loss.h5')
 
     def train(self):
         # saving a model picture
@@ -493,7 +544,7 @@ class DLExperiment(object):
                     n_classes=self.n_classes,
                     batch_size=self.batch_size,
                     h5_model_path=self.h5_model_path,
-                    statistics_path=self.statistics_path
+                    fold_stats_path=self.fold_stats_path
                 )
             )
 
