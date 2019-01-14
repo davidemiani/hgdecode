@@ -1,11 +1,5 @@
 import sys
 import time
-from os import rename
-from os import remove
-from os.path import join
-from os.path import split
-from os.path import exists
-from os.path import splitext
 from numpy import ceil
 from numpy import log10
 from numpy import floor
@@ -20,7 +14,7 @@ from numpy import newaxis
 from numpy import setdiff1d
 from numpy import concatenate
 from numpy.random import RandomState
-from pickle import load, dump
+from pickle import dump
 from collections import OrderedDict
 from keras.utils import Sequence
 from keras.utils import to_categorical
@@ -562,7 +556,7 @@ class MetricsTracker(Callback):
                 self.best['acc'] = self.valid['acc'][epoch]
 
     def on_train_end(self, logs=None):
-        print_manager('RUNNING TESTING', 'double-dashed')
+        print_manager('RUNNING TESTING', 'double-dashed', top_return=1)
 
         # loading best net
         self.model.load_weights(self.h5_model_path)
@@ -770,5 +764,19 @@ class CrossValidation(object):
         )
 
     @staticmethod
-    def cross_validate():
-        pass
+    def cross_validate(subj_results_dir, figures_dir, tables_dir):
+        from os.path import join
+        from os import listdir
+        from pickle import load
+
+        # getting all fold directories path
+        fold_list = listdir(subj_results_dir)
+        fold_list.sort()
+
+        # getting all pickle results path
+        files_path = [join(subj_results_dir, fold_name, 'fold_stats.pickle')
+                      for fold_name in fold_list]
+        for idx, file in enumerate(files_path):
+            with open(file, 'rb') as f:
+                results = load(f)
+            print('fold', idx + 1, 'best epoch:', results['best']['idx'] + 1)

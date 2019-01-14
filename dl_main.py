@@ -103,6 +103,9 @@ for subject_id in subject_ids:
         shuffle=True
     )
 
+    # pre-allocating experiment
+    exp = None
+
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
         # creating EEGDataset for current fold
@@ -125,7 +128,7 @@ for subject_id in subject_ids:
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=0.001,  # Schirrmeister: ?, still not supported
             batch_size=32,  # Schirrmeister: 512
-            epochs=10,  # Schirrmeister: ?
+            epochs=1000,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
@@ -145,5 +148,10 @@ for subject_id in subject_ids:
         # training
         exp.train()
 
-    # computing cross-validation
-    cross_validation.cross_validate()
+    if exp is not None:
+        # computing cross-validation
+        cross_validation.cross_validate(
+            subj_results_dir=exp.subj_results_dir,
+            figures_dir=exp.figures_dir,
+            tables_dir=exp.tables_dir
+        )

@@ -389,9 +389,9 @@ class DLExperiment(object):
         model_results_dir = join(dl_results_dir, self.model_name)
 
         # datetime_results_dir is: .../results/hgdecode/dl/model_name/datetime
-        files_in_folder = listdir(model_results_dir)
-        files_in_folder.sort()
-        datetime_results_dir = join(model_results_dir, files_in_folder[-1])
+        dirs_in_folder = listdir(model_results_dir)
+        dirs_in_folder.sort()
+        datetime_results_dir = join(model_results_dir, dirs_in_folder[-1])
 
         # subj_results_dir is: .../results/hgdecode/dl/model/datetime/subject
         subj_str = str(self.subject_id)
