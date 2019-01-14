@@ -1,15 +1,11 @@
 import logging as log
-from gc import collect
+from copy import deepcopy
 from numpy import max
 from numpy import abs
 from numpy import sum
 from numpy import mean
-from numpy import round
-from numpy import arange
-from numpy import int as npint
 from os.path import join
 from hgdecode.utils import print_manager
-from hgdecode.classes import EEGDataset
 from braindecode.datasets.bbci import BBCIDataset
 from braindecode.mne_ext.signalproc import mne_apply
 from braindecode.mne_ext.signalproc import resample_cnt
@@ -88,6 +84,7 @@ def pick_right_channels(cnt, channel_names):
     return cnt.pick_channels(channel_names)
 
 
+# %% STANDARDIZE_CNT
 def standardize_cnt(cnt):
     # normalize data
     cnt = mne_apply(
@@ -117,6 +114,9 @@ def load_and_preprocess_data(data_dir,
                              clean_ival_ms=(0, 4000),
                              train_test_split=True,
                              clean_on_all_channels=True):
+    # TODO: create here another get_data_files_paths function if you have a
+    #  different file configuration; in every case, file_paths must be a
+    #  list of paths to valid BBCI standard files
     # getting data paths
     file_paths = get_data_files_paths(
         data_dir,
@@ -128,36 +128,22 @@ def load_and_preprocess_data(data_dir,
     print_manager('DATA LOADING ROUTINE', 'double-dashed')
     print_manager('Loading continuous data...')
 
-    # if exists only one data file...
-    if len(file_paths) == 1:
-        # ...loading just it, else...
-        cnt = load_cnt(file_path=file_paths[0],
-                       channel_names=channel_names,
-                       clean_on_all_channels=clean_on_all_channels)
-        train_len = None
-    elif len(file_paths) == 2:
-        # ...loading train_cnt and test_cnt also
-        train_cnt = load_cnt(file_path=file_paths[0],
-                             channel_names=channel_names,
-                             clean_on_all_channels=clean_on_all_channels)
-        test_cnt = load_cnt(file_path=file_paths[1],
-                            channel_names=channel_names,
-                            clean_on_all_channels=clean_on_all_channels)
+    # pre-allocating main cnt
+    cnt = None
 
-        # getting train length before merging them
-        train_len = len(train_cnt.info['events'])
-
-        # merging train and test (computation will be faster)
-        cnt = concatenate_raws_with_events([train_cnt, test_cnt])
-
-        # collecting garbage
-        del train_cnt
-        del test_cnt
-        collect()
-    else:
-        raise Exception('something went wrong: check single/multiple file '
-                        'loading routine.')
-    print_manager('Done!!', bottom_return=1)
+    # loading files and merging them
+    for idx, current_path in enumerate(file_paths):
+        current_cnt = load_cnt(file_path=current_path,
+                               channel_names=channel_names,
+                               clean_on_all_channels=clean_on_all_channels)
+        # if the path is the first one...
+        if idx is 0:
+            # ...copying current_cnt as the main one, else...
+            cnt = deepcopy(current_cnt)
+        else:
+            # merging current_cnt with the main one
+            cnt = concatenate_raws_with_events([cnt, current_cnt])
+    print_manager('DONE!!', bottom_return=1)
 
     # getting clean_trial_mask
     print_manager('Getting clean trial mask...')
@@ -187,7 +173,7 @@ def load_and_preprocess_data(data_dir,
     cnt = standardize_cnt(cnt)
     print_manager('DONE!!', 'last', bottom_return=1)
 
-    return cnt, clean_trial_mask, train_len
+    return cnt, clean_trial_mask
 
 
 # %% ML_LOADER
@@ -219,9 +205,9 @@ def dl_loader(data_dir,
               clean_ival_ms=(0, 4000),
               epoch_ival_ms=(-500, 4000),
               train_test_split=True,
-              clean_on_all_channels=True,
-              validation_frac=0.2):
-    cnt, clean_trial_mask, train_len = load_and_preprocess_data(
+              clean_on_all_channels=True):
+    # loading and pre-processing data
+    cnt, clean_trial_mask = load_and_preprocess_data(
         data_dir=data_dir,
         name_to_start_codes=name_to_start_codes,
         channel_names=channel_names,
@@ -231,9 +217,7 @@ def dl_loader(data_dir,
         train_test_split=train_test_split,
         clean_on_all_channels=clean_on_all_channels
     )
-
-    # printing the eeg dataset instance creation
-    print_manager('CREATING EEG DATASET FOR DL', 'double-dashed')
+    print_manager('EPOCHING AND CLEANING WITH MASK', 'double-dashed')
 
     # epoching continuous data (from RawArray to SignalAndTarget)
     print_manager('Epoching...')
@@ -242,34 +226,13 @@ def dl_loader(data_dir,
         name_to_start_codes,
         epoch_ival_ms
     )
-    tot_len = len(epo.y)
     print_manager('DONE!!', bottom_return=1)
 
-    # if train_len is None, train and test data were not split
-    print_manager('Determining sets dimensions...')
-    if train_len is None:
-        train_len = round(tot_len / 1.8)
-    test_len = tot_len - train_len
-
-    # determining losses in train and test data
-    indexes = arange(tot_len)
-    train_indexes = indexes[0:train_len]
-    test_indexes = indexes[-test_len:]
-    train_clean_trial_mask = clean_trial_mask[train_indexes]
-    test_clean_trial_mask = clean_trial_mask[test_indexes]
-    new_train_len = train_clean_trial_mask.astype(npint).sum()
-    new_test_len = test_clean_trial_mask.astype(npint).sum()
-    print_manager('DONE!!', bottom_return=1)
-
-    # cutting epoched signal
-    print_manager('Creating EEGDataset instance...')
+    # cleaning epoched signal with mask
+    print_manager('cleaning with mask...')
     epo.X = epo.X[clean_trial_mask]
     epo.y = epo.y[clean_trial_mask]
-
-    # creating EEGDataset instance and returning it
-    dataset = EEGDataset.from_epo_to_dataset(epo=epo,
-                                             train_len=new_train_len,
-                                             test_len=new_test_len,
-                                             validation_frac=validation_frac)
     print_manager('DONE!!', 'last', bottom_return=1)
-    return dataset
+
+    # returning only the epoched signal
+    return epo

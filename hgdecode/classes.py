@@ -4,19 +4,24 @@ from numpy import ceil
 from numpy import log10
 from numpy import floor
 from numpy import zeros
+from numpy import round
 from numpy import arange
 from numpy import unique
 from numpy import repeat
 from numpy import append
 from numpy import random
 from numpy import newaxis
+from numpy import setdiff1d
 from numpy import concatenate
+from numpy.random import RandomState
+from pickle import load, dump
 from collections import OrderedDict
 from keras.utils import Sequence
 from keras.utils import to_categorical
 from keras.callbacks import Callback
 from hgdecode.utils import print_manager
 from sklearn.metrics import confusion_matrix
+from braindecode.datautil.iterators import get_balanced_batches
 
 
 class FilterBank(object):
@@ -206,6 +211,7 @@ class EEGDataset(object):
 
     @staticmethod
     def from_epo_to_dataset(epo, train_len, test_len, validation_frac=0.2):
+        # TODO: is it deprecated? Consider to remove this method.
         # computing number of trails for each valid, train & test
         tot_len = len(epo.y)
         valid_len = int(floor(train_len * validation_frac))
@@ -481,106 +487,137 @@ class EEGDataGenerator(Sequence):
         self.next_to_unpack += 1
 
 
-# TODO: MetricsTracker class with: __init__(), on_epoch_end(), and
-#  on_train_end(); the first one initializes the class, the second one
-#  evaluate the model and print a report, the third one plots train,
-#  validation and test curve and saves it
 class MetricsTracker(Callback):
     def __init__(self,
                  dataset,
                  epochs,
                  n_classes,
                  batch_size,
-                 plot_paths_dict):
+                 h5_model_path,
+                 statistics_path):
         # allocating inputs as properties
         self.dataset = dataset
         self.epochs = epochs
         self.n_classes = n_classes
         self.batch_size = batch_size
-        self.plot_paths_dict = plot_paths_dict
+        self.h5_model_path = h5_model_path
+        self.statistics_path = statistics_path
 
         # pre-allocating train, valid and test dicts with loss and conf_mtx
         self.train = {'loss': zeros(epochs),
                       'acc': zeros(epochs)}
         self.valid = {'loss': zeros(epochs),
                       'acc': zeros(epochs)}
-        self.test = {'loss': zeros(epochs),
-                     'acc': zeros(epochs)}
+
+        # pre-allocating best (to track the best net configuration)
+        self.best = {'loss': float('inf'),
+                     'acc': 0,
+                     'idx': None}
 
         # calling the super class constructor
         Callback.__init__(self)
 
     def on_epoch_end(self, epoch, logs=None):
         print('Computing statistics on this epoch:')
-        epoch_string_length = len(str(self.epochs)) * 2 + 1
-        progress_bar_length = 30 + epoch_string_length + 1
-        progress_bar = ProgressBar(target=5, width=progress_bar_length)
-        progress_bar.update(current=0, message='evaluating test')
+        epoch_string_length = len(str(self.epochs)) * 2
+        progress_bar_length = 30 + epoch_string_length
+        progress_bar = ProgressBar(target=2, width=progress_bar_length)
 
-        # loss for training and validation is stored in logs dict
-        self.train['loss'][epoch] = logs['loss']
-        self.valid['loss'][epoch] = logs['val_loss']
+        # computing loss and accuracy on train
+        progress_bar.update(current=0, message='evaluating train')
+        self.train['loss'][epoch], self.train['acc'][epoch] = \
+            self.model.evaluate(
+                x=self.dataset.X_train,
+                y=self.dataset.y_train,
+                batch_size=self.batch_size,
+                verbose=0
+            )
 
-        # computing loss and other metrics for test
-        score = self.model.evaluate(
-            x=self.dataset.X_test,
-            y=self.dataset.y_test,
-            batch_size=self.batch_size,
-            verbose=0
-        )
-        if score is list:
-            self.test['loss'][epoch] = score[0]
-        else:
-            self.test['loss'][epoch] = score
-
-        # predicting train
-        progress_bar.update(current=1, message='predicting train')
-        y_true_train = self.dataset.y_train.argmax(axis=1)
-        y_pred_train = self.model.predict(x=self.dataset.X_train,
-                                          batch_size=self.batch_size,
-                                          verbose=0).argmax(axis=1)
-
-        # predicting valid
-        progress_bar.update(current=2, message='predicting valid')
-        y_true_valid = self.dataset.y_valid.argmax(axis=1)
-        y_pred_valid = self.model.predict(x=self.dataset.X_valid,
-                                          batch_size=self.batch_size,
-                                          verbose=0).argmax(axis=1)
-
-        # predicting test
-        progress_bar.update(current=3, message='predicting test')
-        y_true_test = self.dataset.y_test.argmax(axis=1)
-        y_pred_test = self.model.predict(x=self.dataset.X_test,
-                                         batch_size=self.batch_size,
-                                         verbose=0).argmax(axis=1)
-
-        # from prediction, computing confusion matrix
-        progress_bar.update(current=4, message='computing conf mtx')
-        self.train['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred=y_pred_train, y_true=y_true_train
-        )
-        self.valid['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred=y_pred_valid, y_true=y_true_valid
-        )
-        self.test['conf_mtx'][epoch, ...] = confusion_matrix(
-            y_pred=y_pred_test, y_true=y_true_test
-        )
+        # computing loss and accuracy on validation
+        progress_bar.update(current=1, message='evaluating valid')
+        self.valid['loss'][epoch], self.valid['acc'][epoch] = \
+            self.model.evaluate(
+                x=self.dataset.X_valid,
+                y=self.dataset.y_valid,
+                batch_size=self.batch_size,
+                verbose=0
+            )
 
         # updating prog bar for the end
-        progress_bar.update(current=5, message='statistics completed')
-        print('train loss: {0:.4f}'.format(self.train['loss'][epoch]),
-              'valid loss: {0:.4f}'.format(self.valid['loss'][epoch]),
-              'test loss: {0:.4f}'.format(self.test['loss'][epoch]))
+        message = 'loss: {0:.4f}'.format(self.train['loss'][epoch]) + \
+                  ' - acc: {0:.4f}'.format(self.train['acc'][epoch]) + \
+                  ' - val_loss: {0:.4f}'.format(self.valid['loss'][epoch]) + \
+                  ' - val_acc: {0:.4f}'.format(self.valid['acc'][epoch])
+        progress_bar.update(current=2, message=message)
+
+        # if this is the best net, saving it
+        if self.valid['loss'][epoch] <= self.best['loss']:
+            if self.valid['acc'][epoch] > self.best['acc']:
+                print('New best model found!! :-D\n')
+                self.model.save(self.h5_model_path)
+                self.best['idx'] = epoch
+                self.best['loss'] = self.valid['loss'][epoch]
+                self.best['acc'] = self.valid['acc'][epoch]
 
     def on_train_end(self, logs=None):
-        pass
+        print_manager('RUNNING TESTING', 'double-dashed')
 
-    @staticmethod
-    def get_loss_from_score(score):
-        if score is list:
-            return score[0]
-        else:
-            return score
+        # loading best net
+        self.model.load_weights(self.h5_model_path)
+
+        # running test
+        test_loss, test_acc = self.model.evaluate(
+            self.dataset.X_test,
+            self.dataset.y_test,
+            verbose=1
+        )
+        print('Test loss:', test_loss)
+        print('Test  acc:', test_acc)
+
+        # making predictions on X_test with final model and getting also
+        # y_test from memory; parsing both back from categorical
+        y_test = self.dataset.y_test.argmax(axis=1)
+        y_pred = self.model.predict(self.dataset.X_test).argmax(axis=1)
+
+        # computing confusion matrix
+        conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
+        print("Confusion matrix:\n", conf_mtx)
+
+        # creating results dictionary
+        results = {
+            'train': {
+                'loss': self.train['loss'],
+                'acc': self.train['acc']
+            },
+            'valid': {
+                'loss': self.valid['loss'],
+                'acc': self.valid['acc']
+            },
+            'best': {
+                'loss': self.best['loss'],
+                'acc': self.best['acc'],
+                'idx': self.best['idx']
+            },
+            'test': {
+                'loss': test_loss,
+                'acc': test_acc,
+                'conf_mtx': conf_mtx
+            }
+        }
+
+        # opening pickle file
+        with open(self.statistics_path, 'rb') as file_path:
+            fold_statistics = load(file_path)
+
+        # updating statistics data
+        fold_statistics.append(results)
+
+        # dumping and saving
+        with open(self.statistics_path, 'wb') as file_path:
+            dump(fold_statistics, file_path)
+
+        # printing the end
+        print_manager('', 'last', bottom_return=2)
 
 
 class ProgressBar(object):
@@ -686,3 +723,57 @@ class ProgressBar(object):
         sys.stdout.flush()
 
         self._last_update = now
+
+
+class CrossValidation(object):
+    def __init__(self,
+                 epo,
+                 n_folds=8,
+                 validation_frac=0.1,
+                 random_seed=None,
+                 shuffle=True):
+        # generating random seed if not an input
+        if random_seed is None:
+            random_seed = RandomState(1234)
+
+        # getting trial number
+        n_trials = len(epo.y)
+
+        # getting pseudo-random folds
+        folds = get_balanced_batches(
+            n_trials=n_trials,
+            rng=random_seed,
+            shuffle=shuffle,
+            n_batches=n_folds
+        )
+
+        # train is everything except fold; test is fold indexes
+        self.folds = [
+            {
+                'train': setdiff1d(arange(n_trials), fold),
+                'valid': None,
+                'test': fold
+            }
+            for fold in folds
+        ]
+
+        # getting validation and reshaping train
+        for idx, current_fold in enumerate(self.folds):
+            validation_size = int(round(n_trials * validation_frac))
+            self.folds[idx]['valid'] = current_fold['train'][-validation_size:]
+            self.folds[idx]['train'] = current_fold['train'][:-validation_size]
+
+    @staticmethod
+    def create_dataset_for_fold(epo, fold):
+        return EEGDataset(
+            epo_train_x=epo.X[fold['train'], ...],
+            epo_train_y=epo.y[fold['train']],
+            epo_valid_x=epo.X[fold['valid'], ...],
+            epo_valid_y=epo.y[fold['valid']],
+            epo_test_x=epo.X[fold['test'], ...],
+            epo_test_y=epo.y[fold['test']]
+        )
+
+    @staticmethod
+    def cross_validate():
+        pass

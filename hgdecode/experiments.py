@@ -3,6 +3,7 @@ from os import listdir
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
+from pickle import dump
 from os.path import join
 from itertools import combinations
 from numpy.random import RandomState
@@ -252,6 +253,8 @@ class DLExperiment(object):
                  model_name,
                  results_dir,
                  name_to_start_codes,
+                 random_seed,
+                 fold_idx,
 
                  # hyperparameters
                  dropout_rate=0.5,
@@ -278,6 +281,8 @@ class DLExperiment(object):
         self.model_name = model_name
         self.results_dir = results_dir
         self.name_to_start_codes = name_to_start_codes
+        self.random_seed = random_seed
+        self.fold_idx = fold_idx
 
         # hyperparameters
         self.dropout_rate = dropout_rate
@@ -311,6 +316,7 @@ class DLExperiment(object):
         self.plot_paths_dict = None
         self.h5_models_dir = None
         self.h5_model_path = None
+        self.statistics_path = None
         self.paths_manager()
 
         # importing model
@@ -380,6 +386,7 @@ class DLExperiment(object):
         self.model_picture_path = join(self.results_dir, 'model_picture.png')
         self.model_report_path = join(self.results_dir, 'model_report.txt')
         self.train_report_path = join(self.results_dir, 'train_report.csv')
+        self.statistics_path = join(self.results_dir, 'statistics.pickle')
         self.plot_paths_dict = {
             'loss': join(self.results_dir, 'loss_plot.png'),
             'acc': join(self.results_dir, 'acc_plot.png')
@@ -395,6 +402,11 @@ class DLExperiment(object):
             # pointing to the same results directory
             self.h5_model_path = join(self.results_dir, 'net_best_val_loss.h5')
 
+        # pre-allocating pickle statistics file with an empty list
+        fold_statistics = []
+        with open(self.statistics_path, 'wb') as file_path:
+            dump(fold_statistics, file_path)
+
     def train(self):
         # saving a model picture
         # TODO: model_pic.png saving routine
@@ -403,16 +415,22 @@ class DLExperiment(object):
         with open(self.model_report_path, 'w') as mr:
             self.model.summary(print_fn=lambda x: mr.write(x + '\n'))
 
+        # pre-allocating callbacks list
+        callbacks = []
+
         # saving a train report
         csv = CSVLogger(self.train_report_path)
+        callbacks.append(csv)
 
-        # saving model
+        # saving model each epoch
         if self.save_model_at_each_epoch:
             mcp = ModelCheckpoint(self.h5_model_path)
-        else:
-            mcp = ModelCheckpoint(self.h5_model_path,
-                                  monitor='val_loss',
-                                  save_best_only=True)
+            callbacks.append(mcp)
+        # else:
+        # mcp = ModelCheckpoint(self.h5_model_path,
+        #                      monitor='val_loss',
+        #                      save_best_only=True)
+        # callbacks.append(mcp)
 
         # if early_stopping is True...
         if self.early_stopping is True:
@@ -424,15 +442,10 @@ class DLExperiment(object):
                                 min_delta=self.min_delta,
                                 patience=self.patience,
                                 verbose=1)
-
-            # creating the callbacks array
-            callbacks = [mcp, csv, esc]
+            callbacks.append(esc)
         else:
             # getting user defined epochs value
             epochs = self.epochs
-
-            # creating the callbacks array
-            callbacks = [mcp, csv]
 
         # using fit_generator if a data generator is required
         if self.data_generator is True:
@@ -450,7 +463,10 @@ class DLExperiment(object):
                                                     self.crop_step)
 
             # training!
-            print_manager('RUNNING TRAINING', 'double-dashed')
+            print_manager(
+                'RUNNING TRAINING ON FOLD {}'.format(self.fold_idx + 1),
+                'double-dashed'
+            )
             self.model.fit_generator(generator=training_generator,
                                      validation_data=validation_generator,
                                      use_multiprocessing=True,
@@ -476,12 +492,16 @@ class DLExperiment(object):
                     epochs=self.epochs,
                     n_classes=self.n_classes,
                     batch_size=self.batch_size,
-                    plot_paths_dict=self.plot_paths_dict
+                    h5_model_path=self.h5_model_path,
+                    statistics_path=self.statistics_path
                 )
             )
 
             # training!
-            print_manager('RUNNING TRAINING', 'double-dashed')
+            print_manager(
+                'RUNNING TRAINING ON FOLD {}'.format(self.fold_idx + 1),
+                'double-dashed'
+            )
             self.model.fit(x=self.dataset.X_train,
                            y=self.dataset.y_train,
                            validation_data=(self.dataset.X_valid,
@@ -499,6 +519,10 @@ class DLExperiment(object):
     def test(self):
         # TODO: evaluate_generator if data_generator is True
         print_manager('RUNNING TESTING', 'double-dashed')
+
+        # loading best net
+        self.model.load_weights(self.h5_model_path)
+
         # computing loss and other metrics
         score = self.model.evaluate(
             self.dataset.X_test,
