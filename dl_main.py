@@ -125,7 +125,7 @@ for subject_id in subject_ids:
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=0.001,  # Schirrmeister: ?, still not supported
             batch_size=32,  # Schirrmeister: 512
-            epochs=1000,  # Schirrmeister: ?
+            epochs=10,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?

@@ -1,5 +1,11 @@
 import sys
 import time
+from os import rename
+from os import remove
+from os.path import join
+from os.path import split
+from os.path import exists
+from os.path import splitext
 from numpy import ceil
 from numpy import log10
 from numpy import floor
@@ -504,10 +510,10 @@ class MetricsTracker(Callback):
         self.statistics_path = statistics_path
 
         # pre-allocating train, valid and test dicts with loss and conf_mtx
-        self.train = {'loss': zeros(epochs),
-                      'acc': zeros(epochs)}
-        self.valid = {'loss': zeros(epochs),
-                      'acc': zeros(epochs)}
+        self.train = {'loss': [],
+                      'acc': []}
+        self.valid = {'loss': [],
+                      'acc': []}
 
         # pre-allocating best (to track the best net configuration)
         self.best = {'loss': float('inf'),
@@ -517,7 +523,7 @@ class MetricsTracker(Callback):
         # calling the super class constructor
         Callback.__init__(self)
 
-    def on_epoch_end(self, epoch, logs=None):
+    def on_epoch_end(self, epoch, logs={}):
         print('Computing statistics on this epoch:')
         epoch_string_length = len(str(self.epochs)) * 2
         progress_bar_length = 30 + epoch_string_length
@@ -525,23 +531,19 @@ class MetricsTracker(Callback):
 
         # computing loss and accuracy on train
         progress_bar.update(current=0, message='evaluating train')
-        self.train['loss'][epoch], self.train['acc'][epoch] = \
-            self.model.evaluate(
-                x=self.dataset.X_train,
-                y=self.dataset.y_train,
-                batch_size=self.batch_size,
-                verbose=0
-            )
+        score = self.model.evaluate(
+            x=self.dataset.X_train,
+            y=self.dataset.y_train,
+            batch_size=self.batch_size,
+            verbose=0
+        )
+        self.train['loss'].append(score[0])
+        self.train['acc'].append(score[1])
 
-        # computing loss and accuracy on validation
+        # getting loss and accuracy on validation from logs
         progress_bar.update(current=1, message='evaluating valid')
-        self.valid['loss'][epoch], self.valid['acc'][epoch] = \
-            self.model.evaluate(
-                x=self.dataset.X_valid,
-                y=self.dataset.y_valid,
-                batch_size=self.batch_size,
-                verbose=0
-            )
+        self.valid['loss'].append(logs.get('val_loss'))
+        self.valid['acc'].append(logs.get('val_acc'))
 
         # updating prog bar for the end
         message = 'loss: {0:.4f}'.format(self.train['loss'][epoch]) + \
@@ -601,20 +603,28 @@ class MetricsTracker(Callback):
             'test': {
                 'loss': test_loss,
                 'acc': test_acc,
-                'conf_mtx': conf_mtx
+                'conf_mtx': conf_mtx.tolist()
             }
         }
 
         # opening pickle file
-        with open(self.statistics_path, 'rb') as file_path:
-            fold_statistics = load(file_path)
+        with open(self.statistics_path, 'rb') as file_path_now:
+            fold_statistics = load(file_path_now)
 
         # updating statistics data
         fold_statistics.append(results)
 
+        # creating backup
+        backup_dir, backup_file_name = split(self.statistics_path)
+        backup_file_name = splitext(backup_file_name)[0] + '.bak'
+        backup_path = join(backup_dir, backup_file_name)
+        if exists(backup_path):
+            remove(backup_path)
+        rename(self.statistics_path, backup_path)
+
         # dumping and saving
-        with open(self.statistics_path, 'wb') as file_path:
-            dump(fold_statistics, file_path)
+        with open(self.statistics_path, 'wb') as file_path_then:
+            dump(fold_statistics, file_path_then)
 
         # printing the end
         print_manager('', 'last', bottom_return=2)
