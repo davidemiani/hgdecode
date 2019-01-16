@@ -14,6 +14,7 @@ from multiprocessing import cpu_count
 
 # Deep Learning
 from hgdecode import models
+from keras import optimizers
 from keras.callbacks import CSVLogger
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -336,9 +337,15 @@ class DLExperiment(object):
         expression = 'models.' + self.model_name + '(' + model_inputs_str + ')'
         self.model = eval(expression)
 
+        # creating optimizer instance
+        if self.optimizer is 'Adam':
+            opt = optimizers.Adam(lr=self.learning_rate)
+        else:
+            opt = optimizers.Adam(lr=self.learning_rate)
+
         # compiling model
         self.model.compile(loss=self.loss,
-                           optimizer=self.optimizer,
+                           optimizer=opt,
                            metrics=['accuracy'])
         self.model.summary()
         print_manager('DONE!!', print_style='last', bottom_return=1)
