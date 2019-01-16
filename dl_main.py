@@ -88,8 +88,8 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-1500, 500),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-1500, 500),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
@@ -125,10 +125,10 @@ for subject_id in subject_ids:
             fold_idx=fold_idx,
 
             # hyperparameters
-            dropout_rate=0,  # Schirrmeister: 0.5
-            learning_rate=0.001,  # Schirrmeister: ?, still not supported
-            batch_size=32,  # Schirrmeister: 512
-            epochs=1000,  # Schirrmeister: ?
+            dropout_rate=0.5,  # Schirrmeister: 0.5
+            learning_rate=1 * 1e-4,  # Schirrmeister: ?
+            batch_size=64,  # Schirrmeister: 512
+            epochs=400,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
