@@ -803,7 +803,8 @@ class CrossValidation(object):
         fold_list.sort()
 
         # deleting unuseful stuff
-        fold_list.remove('.DS_Store')
+        if 'DS_Store' in fold_list:
+            fold_list.remove('.DS_Store')
 
         # getting all pickle results paths
         file_paths = [join(subj_results_dir, fold_name, 'fold_stats.pickle')

@@ -1,11 +1,8 @@
 from hgdecode.classes import CrossValidation
 
-subj_results_dir = '/Users/davidemiani/Desktop/results/hgdecode/dl' \
-                   '/DeepConvNet/2019-01-16_09-57-27/subj01'
-figures_dir = '/Users/davidemiani/Desktop/results/hgdecode/dl/DeepConvNet' \
-              '/2019-01-16_09-57-27/statistics/figures/subj01'
-tables_dir = '/Users/davidemiani/Desktop/results/hgdecode/dl/DeepConvNet' \
-             '/2019-01-16_09-57-27/statistics/tables'
+subj_results_dir = '/Users/davidemiani/Desktop/test/subj01'
+figures_dir = '/Users/davidemiani/Desktop/test/statistics/figures/subj01'
+tables_dir = '/Users/davidemiani/Desktop/test/statistics/tables'
 
 CrossValidation.cross_validate(
     subj_results_dir=subj_results_dir,

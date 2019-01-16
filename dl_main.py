@@ -125,7 +125,7 @@ for subject_id in subject_ids:
             fold_idx=fold_idx,
 
             # hyperparameters
-            dropout_rate=0.5,  # Schirrmeister: 0.5
+            dropout_rate=0,  # Schirrmeister: 0.5
             learning_rate=0.001,  # Schirrmeister: ?, still not supported
             batch_size=32,  # Schirrmeister: 512
             epochs=1000,  # Schirrmeister: ?
