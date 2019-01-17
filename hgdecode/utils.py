@@ -101,19 +101,23 @@ def create_log(results_dir=None,
     if results_dir is None:
         results_dir = join(getcwd(), 'results')
 
-    # setting subject_id_str
-    subject_id_str = str(subject_id)
-    if len(subject_id_str) == 1:
-        subject_id_str = '0' + subject_id_str
-
     # setting log_file_dir
     log_file_dir = join(results_dir,
                         learning_type,
                         algorithm_or_model_name,
                         now_dir)
 
+    # setting subject_id_str
+    if type(subject_id) is str:
+        subject_str = subject_id
+    else:
+        subject_str = str(subject_id)
+        if len(subject_str) == 1:
+            subject_str = '0' + subject_str
+        subject_str = 'subj' + subject_str
+
     # setting subject_results_dir
-    subject_results_dir = join(log_file_dir, 'subj' + subject_id_str)
+    subject_results_dir = join(log_file_dir, subject_str)
 
     # touching directories
     touch_dir(log_file_dir)
@@ -155,7 +159,7 @@ def create_log(results_dir=None,
 
     # printing current cycle information
     print_manager(
-        '{:s} with {:s} on subject {:d}'.format(
+        '{} with {} on subject {}'.format(
             learning_type.upper(),
             algorithm_or_model_name,
             subject_id
