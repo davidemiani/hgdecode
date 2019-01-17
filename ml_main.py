@@ -103,7 +103,7 @@ for subject_id in subject_ids:
         filt_order=3,
 
         # machine learning parameters
-        n_folds=10,
+        n_folds=8,
         n_top_bottom_csp_filters=5,
         n_selected_filterbands=None,
         n_selected_features=20,
