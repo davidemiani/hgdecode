@@ -81,7 +81,9 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,
-        clean_ival_ms=[0, 4000]
+        clean_ival_ms=[0, 4000],
+        train_test_split=True,  # Schirrmeister: True
+        clean_on_all_channels=False  # Schirrmeister: True
     )
 
     # creating experiment instance

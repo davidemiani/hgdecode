@@ -183,7 +183,8 @@ def ml_loader(data_dir,
               subject_id=1,
               resampling_freq=None,
               clean_ival_ms=(0, 4000),
-              train_test_split=True):
+              train_test_split=True,
+              clean_on_all_channels=True):
     outputs = load_and_preprocess_data(
         data_dir=data_dir,
         name_to_start_codes=name_to_start_codes,
@@ -191,7 +192,8 @@ def ml_loader(data_dir,
         subject_id=subject_id,
         resampling_freq=resampling_freq,
         clean_ival_ms=clean_ival_ms,
-        train_test_split=train_test_split
+        train_test_split=train_test_split,
+        clean_on_all_channels=clean_on_all_channels
     )
     return outputs[0], outputs[1]
 
