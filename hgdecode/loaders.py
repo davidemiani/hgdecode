@@ -10,6 +10,7 @@ from numpy import concatenate
 from numpy import count_nonzero
 from numpy.random import shuffle
 from os.path import join
+from mne.io.array.array import RawArray
 from hgdecode.utils import print_manager
 from hgdecode.classes import CrossValidation
 from braindecode.datasets.bbci import BBCIDataset
@@ -284,6 +285,9 @@ class CrossSubject(object):
         self.clean_trial_mask = []
         self.subject_indexes = []
 
+        # for fold specific data, creating a blank property
+        self.fold_data = None
+
         # loading the first subject (to pre-allocate cnt array)
         temp_cnt, temp_mask = load_and_preprocess_data(
             data_dir=self.data_dir,
@@ -336,34 +340,59 @@ class CrossSubject(object):
             self.clean_trial_mask = concatenate((self.clean_trial_mask,
                                                  temp_mask))
 
-    def parser(self, output_format, leave_subj, validation_frac=0.1):
+    def parser(self,
+               output_format,
+               leave_subj,
+               validation_frac=0.1,
+               parsing_type=0):
+        """if parsing_type is 0 then epoched signal will be saved in
+        fold_data; if parsing_type is 1 then the cnt signal will be replaced
+        with the epoched one"""
         print_manager('PREPARING FOLD ALL BUT ' + str(leave_subj),
                       'double-dashed')
         if output_format is 'epo':
-            self.cnt_to_epo()
+            self.cnt_to_epo(parsing_type=parsing_type)
         elif output_format is 'EEGDataset':
-            self.cnt_to_epo()
-            self.epo_to_dataset(leave_subj, validation_frac)
-        print_manager('DATA READY!!', 'last')
+            self.cnt_to_epo(parsing_type=parsing_type)
+            self.epo_to_dataset(leave_subj=leave_subj,
+                                validation_frac=validation_frac,
+                                parsing_type=parsing_type)
+        print_manager('DATA READY!!', 'last', bottom_return=1)
 
-    def cnt_to_epo(self):
-        print_manager('Parsing cnt signal to epoched one...')
-        self.data = create_signal_target_from_raw_mne(
-            self.data,
-            self.name_to_start_codes,
-            self.epoch_ival_ms
-        )
-        print_manager('DONE!!', bottom_return=1)
+    def cnt_to_epo(self, parsing_type):
+        if isinstance(self.data, RawArray):
+            if parsing_type is 0:
+                print_manager('Parsing cnt signal to epoched one...')
+                self.fold_data = create_signal_target_from_raw_mne(
+                    self.data,
+                    self.name_to_start_codes,
+                    self.epoch_ival_ms
+                )
+                print_manager('DONE!!', bottom_return=1)
+                print_manager('Cleaning epoched signal with mask...')
+                self.fold_data.X = self.fold_data.X[self.clean_trial_mask]
+                self.fold_data.y = self.fold_data.y[self.clean_trial_mask]
+                print_manager('DONE!!', bottom_return=1)
+            elif parsing_type is 1:
+                print_manager('Parsing cnt signal to epoched one...')
+                self.data = create_signal_target_from_raw_mne(
+                    self.data,
+                    self.name_to_start_codes,
+                    self.epoch_ival_ms
+                )
+                print_manager('DONE!!', bottom_return=1)
+                print_manager('Cleaning epoched signal with mask...')
+                self.data.X = self.data.X[self.clean_trial_mask]
+                self.data.y = self.data.y[self.clean_trial_mask]
+                print_manager('DONE!!', bottom_return=1)
+            else:
+                print('WARNING: parsing_type {} not supported.'.format(
+                    parsing_type))
 
-        print_manager('Cleaning epoched signal with mask...')
-        self.data.X = self.data.X[self.clean_trial_mask]
-        self.data.y = self.data.y[self.clean_trial_mask]
-        print_manager('DONE!!', bottom_return=1)
-
-    def epo_to_dataset(self, leave_sbj, validation_frac=0.1):
+    def epo_to_dataset(self, leave_subj, validation_frac=0.1, parsing_type=0):
         print_manager('Creating current fold...')
         n_trials = self.n_trials
-        test_fold_indexes = self.subject_indexes[leave_sbj - 1]
+        test_fold_indexes = self.subject_indexes[leave_subj - 1]
         test_fold_range = arange(test_fold_indexes[0], test_fold_indexes[1])
         fold = {'train': setdiff1d(arange(n_trials), test_fold_range),
                 'valid': None,
@@ -374,8 +403,19 @@ class CrossSubject(object):
         fold['train'] = fold['train'][:-validation_size]
         print_manager('DONE!!', bottom_return=1)
         print_manager('Parsing epoched signal to EEGDataset...')
-        self.data = CrossValidation.create_dataset_for_fold(self.data, fold)
-        print_manager('DONE!!')
+        if parsing_type is 0:
+            self.fold_data = CrossValidation.create_dataset_for_fold(
+                self.fold_data, fold
+            )
+        elif parsing_type is 1:
+            self.fold_data = CrossValidation.create_dataset_for_fold(
+                self.data, fold
+            )
+        else:
+            print('WARNING: parsing_type {} not supported.'.format(
+                parsing_type))
+        print_manager('DONE!!', bottom_return=1)
+        print_manager('We obtained a ' + str(self.fold_data))
 
     @property
     def n_trials(self):
