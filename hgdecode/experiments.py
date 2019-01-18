@@ -96,6 +96,7 @@ class FBCSPrLDAExperiment(object):
                  cnt,
                  clean_trial_mask,
                  name_to_start_codes,
+                 random_seed,
                  name_to_stop_codes=None,
                  epoch_ival_ms=(-500, 4000),
 
@@ -122,6 +123,7 @@ class FBCSPrLDAExperiment(object):
         self.epoch_ival_ms = epoch_ival_ms
         self.name_to_start_codes = name_to_start_codes
         self.name_to_stop_codes = name_to_stop_codes
+        self.random_seed = random_seed
 
         # bank filter-related inputs
         self.min_freq = min_freq
@@ -164,10 +166,12 @@ class FBCSPrLDAExperiment(object):
         )
 
     def create_folds(self):
+        # TODO: add here some code to create fold in case of cross-subject
+        #  validation; then you should be good to go
         # getting pseudo-random folds
         folds = get_balanced_batches(
             n_trials=self.n_trials,
-            rng=RandomState(1234),
+            rng=self.random_seed,
             shuffle=self.shuffle,
             n_batches=self.n_folds
         )

@@ -2,6 +2,7 @@ from os import getcwd
 from os.path import join
 from os.path import dirname
 from collections import OrderedDict
+from numpy.random import RandomState
 from hgdecode.utils import create_log
 from hgdecode.loaders import ml_loader
 from hgdecode.experiments import FBCSPrLDAExperiment
@@ -55,6 +56,9 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 
 # setting subject_ids
 subject_ids = (1,)  # 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+
+# setting random seed
+random_seed = RandomState(1234)
 
 """
 MAIN CYCLE

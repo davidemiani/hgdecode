@@ -4,8 +4,14 @@ from numpy import max
 from numpy import abs
 from numpy import sum
 from numpy import mean
+from numpy import arange
+from numpy import setdiff1d
+from numpy import concatenate
+from numpy import count_nonzero
+from numpy.random import shuffle
 from os.path import join
 from hgdecode.utils import print_manager
+from hgdecode.classes import CrossValidation
 from braindecode.datasets.bbci import BBCIDataset
 from braindecode.mne_ext.signalproc import mne_apply
 from braindecode.mne_ext.signalproc import resample_cnt
@@ -125,7 +131,8 @@ def load_and_preprocess_data(data_dir,
     )
 
     # starting the loading routine
-    print_manager('DATA LOADING ROUTINE', 'double-dashed')
+    print_manager('DATA LOADING ROUTINE FOR SUBJ ' + str(subject_id),
+                  'double-dashed')
     print_manager('Loading continuous data...')
 
     # pre-allocating main cnt
@@ -238,3 +245,138 @@ def dl_loader(data_dir,
 
     # returning only the epoched signal
     return epo
+
+
+# %% CROSS SUBJECT OBJECT
+class CrossSubject(object):
+    def __init__(self,
+                 data_dir,
+                 subject_ids,
+                 channel_names,
+                 name_to_start_codes,
+                 resampling_freq=None,
+                 train_test_split=True,
+                 clean_ival_ms=(-500, 4000),
+                 epoch_ival_ms=(-500, 4000),
+                 clean_on_all_channels=True):
+        # Nel momento in cui si crea una istanza di questa classe,
+        # essa caricherà tutti quanti gli id soggetto indicati in formato
+        # cnt con le relative maschere ed un nuovo array che ci dice tutti
+        # gli indici in cui iniziano i vari soggetti; inoltre, si andrà poi a
+        # specificare volta per volta il tipo di dato che si vorrà avere in
+        # memoria utilizzando un metodo parser, che andrà a sovrascrivere i
+        # dati nel nuovo formato. SOVRASCRIVERE, non creare una nuova
+        # proprietà dell'oggetto, se no si avrà il doppio della memoria
+        # occupata.
+        # from input properties
+        self.data_dir = data_dir
+        self.subject_ids = subject_ids
+        self.channel_names = channel_names
+        self.name_to_start_codes = name_to_start_codes
+        self.resampling_freq = resampling_freq
+        self.train_test_split = train_test_split
+        self.clean_ival_ms = clean_ival_ms
+        self.epoch_ival_ms = epoch_ival_ms
+        self.clean_on_all_channels = clean_on_all_channels
+
+        # other object properties
+        self.data = None
+        self.clean_trial_mask = []
+        self.subject_indexes = []
+
+        # loading the first subject (to pre-allocate cnt array)
+        temp_cnt, temp_mask = load_and_preprocess_data(
+            data_dir=self.data_dir,
+            name_to_start_codes=self.name_to_start_codes,
+            channel_names=self.channel_names,
+            subject_id=self.subject_ids[0],
+            resampling_freq=self.resampling_freq,
+            clean_ival_ms=self.clean_ival_ms,
+            train_test_split=self.train_test_split,
+            clean_on_all_channels=self.clean_on_all_channels
+        )
+
+        # appending new indexes (only cleaned cnt will count!)
+        last_non_zero_len = count_nonzero(self.clean_trial_mask)
+        self.subject_indexes.append(
+            [last_non_zero_len, last_non_zero_len + count_nonzero(temp_mask)]
+        )
+
+        # merging cnt and mask (in this case assigning)
+        self.data = temp_cnt
+        self.clean_trial_mask = temp_mask
+
+        # creating iterable object from subject_ids and skipping the first one
+        iter_subjects = iter(self.subject_ids)
+        next(iter_subjects)
+
+        # loading all others cnt data and concatenating them
+        for current_subject in iter_subjects:
+            # loading current subject cnt and mask
+            temp_cnt, temp_mask = load_and_preprocess_data(
+                subject_id=current_subject,  # here the current subject!
+                data_dir=self.data_dir,
+                name_to_start_codes=self.name_to_start_codes,
+                channel_names=self.channel_names,
+                resampling_freq=self.resampling_freq,
+                clean_ival_ms=self.clean_ival_ms,
+                train_test_split=self.train_test_split,
+                clean_on_all_channels=self.clean_on_all_channels
+            )
+
+            # appending new indexes (only cleaned cnt will count!)
+            last_non_zero_len = count_nonzero(self.clean_trial_mask)
+            self.subject_indexes.append(
+                [last_non_zero_len,
+                 last_non_zero_len + count_nonzero(temp_mask)]
+            )
+
+            # merging cnt and mask
+            self.data = concatenate_raws_with_events([self.data, temp_cnt])
+            self.clean_trial_mask = concatenate((self.clean_trial_mask,
+                                                 temp_mask))
+
+    def parser(self, output_format, leave_subj, validation_frac=0.1):
+        print_manager('PREPARING FOLD ALL BUT ' + str(leave_subj),
+                      'double-dashed')
+        if output_format is 'epo':
+            self.cnt_to_epo()
+        elif output_format is 'EEGDataset':
+            self.cnt_to_epo()
+            self.epo_to_dataset(leave_subj, validation_frac)
+        print_manager('DATA READY!!', 'last')
+
+    def cnt_to_epo(self):
+        print_manager('Parsing cnt signal to epoched one...')
+        self.data = create_signal_target_from_raw_mne(
+            self.data,
+            self.name_to_start_codes,
+            self.epoch_ival_ms
+        )
+        print_manager('DONE!!', bottom_return=1)
+
+        print_manager('Cleaning epoched signal with mask...')
+        self.data.X = self.data.X[self.clean_trial_mask]
+        self.data.y = self.data.y[self.clean_trial_mask]
+        print_manager('DONE!!', bottom_return=1)
+
+    def epo_to_dataset(self, leave_sbj, validation_frac=0.1):
+        print_manager('Creating current fold...')
+        n_trials = self.n_trials
+        test_fold_indexes = self.subject_indexes[leave_sbj - 1]
+        test_fold_range = arange(test_fold_indexes[0], test_fold_indexes[1])
+        fold = {'train': setdiff1d(arange(n_trials), test_fold_range),
+                'valid': None,
+                'test': test_fold_range}
+        shuffle(fold['train'])
+        validation_size = int(round(n_trials * validation_frac))
+        fold['valid'] = fold['train'][-validation_size:]
+        fold['train'] = fold['train'][:-validation_size]
+        print_manager('DONE!!', bottom_return=1)
+        print_manager('Parsing epoched signal to EEGDataset...')
+        self.data = CrossValidation.create_dataset_for_fold(self.data, fold)
+        print_manager('DONE!!')
+
+    @property
+    def n_trials(self):
+        return count_nonzero(self.clean_trial_mask)

@@ -4,6 +4,7 @@ from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.loaders import CrossSubject
 
 # setting model_name
 model_name = 'DeepConvNet'
@@ -31,7 +32,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2,)  # 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random seed
 random_seed = RandomState(1234)
@@ -45,13 +46,16 @@ create_log(
     output_on_file=False
 )
 
-# main cycle
-for test_subj in subject_ids:
-    # getting the list of subject for training
-    train_subjs = list(subject_ids)
-    train_subjs.remove(test_subj)
+cross_obj = CrossSubject(data_dir=data_dir,
+                         subject_ids=subject_ids,
+                         channel_names=channel_names,
+                         name_to_start_codes=name_to_start_codes,
+                         resampling_freq=250,
+                         train_test_split=True,
+                         clean_ival_ms=(-500, 4000),
+                         epoch_ival_ms=(-500, 4000),
+                         clean_on_all_channels=False)
 
-    # loading training data
-    for train_subj in train_subjs:
-
-        pass
+for leave_subj in subject_ids:
+    cross_obj.parser('EEGDataset', leave_subj, validation_frac=0.1)
+    print('ciao!')
