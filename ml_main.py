@@ -85,7 +85,7 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,
-        clean_ival_ms=[0, 4000],
+        clean_ival_ms=[-500, 4000],
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
@@ -93,9 +93,10 @@ for subject_id in subject_ids:
     # creating experiment instance
     exp = FBCSPrLDAExperiment(
         # signal-related inputs
-        cnt,
-        clean_trial_mask,
-        name_to_start_codes,
+        cnt=cnt,
+        clean_trial_mask=clean_trial_mask,
+        name_to_start_codes=name_to_start_codes,
+        random_seed=random_seed,
         name_to_stop_codes=None,
         epoch_ival_ms=(-500, 4000),
 
@@ -120,3 +121,6 @@ for subject_id in subject_ids:
 
     # running the experiment
     exp.run()
+
+    # just jocking
+    print('ciao!')
