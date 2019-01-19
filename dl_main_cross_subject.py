@@ -70,13 +70,12 @@ if restart_from is None:
     use_last_result_directory = False
 else:
     subject_ids = restart_from
-    fold_threshold = subject_ids[1] - 1
     use_last_result_directory = True
 
 # pre-allocating experiment
 exp = None
 
-for fold_idx, leave_subj in enumerate(subject_ids):
+for leave_subj in subject_ids:
     cross_obj.parser(output_format='EEGDataset',
                      leave_subj=leave_subj,
                      validation_frac=0.1,
@@ -90,7 +89,7 @@ for fold_idx, leave_subj in enumerate(subject_ids):
         results_dir=results_dir,
         name_to_start_codes=name_to_start_codes,
         random_seed=random_seed,
-        fold_idx=fold_idx + fold_threshold,
+        fold_idx=leave_subj - 1,
 
         # hyperparameters
         dropout_rate=0.5,  # Schirrmeister: 0.5
