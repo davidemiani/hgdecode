@@ -2,8 +2,8 @@ import csv
 import sys
 import datetime
 import logging as log
-from os import getcwd
 from os import system
+from os import listdir
 from os import makedirs
 from sys import platform
 from os.path import join
@@ -87,25 +87,31 @@ def touch_file(file_path):
         return False
 
 
-def create_log(results_dir=None,
+def create_log(results_dir,
                learning_type='ml',
                algorithm_or_model_name='FBCSP_rLDA',
                subject_id=1,
-               output_on_file=False):
+               output_on_file=False,
+               use_last_result_directory=False):
     # getting now_dir from global
     global now_dir
-    if len(now_dir) == 0:
-        now_dir = datetime_dir_format()
 
-    # if not specified, setting '$current_directory/results' as results_dir
-    if results_dir is None:
-        results_dir = join(getcwd(), 'results')
+    # setting temporary results directory
+    results_dir = join(results_dir,
+                       learning_type,
+                       algorithm_or_model_name)
+
+    # setting now_dir if necessary
+    if len(now_dir) is 0:
+        if use_last_result_directory is True:
+            dirs_in_folder = listdir(results_dir)
+            dirs_in_folder.sort()
+            now_dir = dirs_in_folder[-1]
+        else:
+            now_dir = datetime_dir_format()
 
     # setting log_file_dir
-    log_file_dir = join(results_dir,
-                        learning_type,
-                        algorithm_or_model_name,
-                        now_dir)
+    log_file_dir = join(results_dir, now_dir)
 
     # setting subject_id_str
     if type(subject_id) is str:

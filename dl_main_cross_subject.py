@@ -33,11 +33,15 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Rest', [3]),
                                    ('Feet', [4])])
 
+# setting random seed
+random_seed = RandomState(1234)
+
 # setting subject_ids
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
-# setting random seed
-random_seed = RandomState(1234)
+# recovery information
+restart_from = (5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+use_last_result_directory = True
 
 # creating a log object
 create_log(
@@ -45,9 +49,11 @@ create_log(
     learning_type='dl',
     algorithm_or_model_name=model_name,
     subject_id='subj_cross',
-    output_on_file=False
+    output_on_file=False,
+    use_last_result_directory=use_last_result_directory
 )
 
+# creating a cross-subject object for cross-subject validation
 cross_obj = CrossSubject(data_dir=data_dir,
                          subject_ids=subject_ids,
                          channel_names=channel_names,
@@ -57,6 +63,15 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          clean_ival_ms=(-500, 4000),
                          epoch_ival_ms=(-500, 4000),
                          clean_on_all_channels=False)
+
+# if computation crashed, you can restart using only a subject subset
+if restart_from is None:
+    fold_threshold = 0
+    use_last_result_directory = False
+else:
+    subject_ids = restart_from
+    fold_threshold = subject_ids[1] - 1
+    use_last_result_directory = True
 
 # pre-allocating experiment
 exp = None
@@ -75,7 +90,7 @@ for fold_idx, leave_subj in enumerate(subject_ids):
         results_dir=results_dir,
         name_to_start_codes=name_to_start_codes,
         random_seed=random_seed,
-        fold_idx=fold_idx,
+        fold_idx=fold_idx + fold_threshold,
 
         # hyperparameters
         dropout_rate=0.5,  # Schirrmeister: 0.5
