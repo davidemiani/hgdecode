@@ -150,8 +150,5 @@ for subject_id in subject_ids:
 
     if exp is not None:
         # computing cross-validation
-        cross_validation.cross_validate(
-            subj_results_dir=exp.subj_results_dir,
-            figures_dir=exp.figures_dir,
-            tables_dir=exp.tables_dir
-        )
+        cross_validation.cross_validate(subj_results_dir=exp.subj_results_dir,
+                                        label_names=name_to_start_codes)

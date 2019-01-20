@@ -4,6 +4,8 @@ from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.utils import ml_results_saver
+from hgdecode.classes import CrossValidation
 from hgdecode.loaders import ml_loader
 from hgdecode.experiments import FBCSPrLDAExperiment
 
@@ -55,7 +57,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1,)  # 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random seed
 random_seed = RandomState(1234)
@@ -70,7 +72,7 @@ to obtain different results.
 """
 for subject_id in subject_ids:
     # creating a log object
-    create_log(
+    subj_results_dir = create_log(
         results_dir=results_dir,
         learning_type='ml',
         algorithm_or_model_name=algorithm_name,
@@ -84,8 +86,8 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
         channel_names=channel_names,
         subject_id=subject_id,
-        resampling_freq=250,
-        clean_ival_ms=[-500, 4000],
+        resampling_freq=250,  # Schirrmeister: 250
+        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
@@ -97,30 +99,34 @@ for subject_id in subject_ids:
         clean_trial_mask=clean_trial_mask,
         name_to_start_codes=name_to_start_codes,
         random_seed=random_seed,
-        name_to_stop_codes=None,
-        epoch_ival_ms=(-500, 4000),
+        name_to_stop_codes=None,  # Schirrmeister: None
+        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
 
         # bank filter-related inputs
-        min_freq=[0, 10],
-        max_freq=[12, 122],
-        window=[6, 8],
-        overlap=[3, 4],
-        filt_order=3,
+        min_freq=[0, 10],  # Schirrmeister: [0, 10]
+        max_freq=[12, 122],  # Schirrmeister: [12, 122]
+        window=[6, 8],  # Schirrmeister: [6, 8]
+        overlap=[3, 4],  # Schirrmeister: [3, 4]
+        filt_order=3,  # filt_order: 3
 
         # machine learning parameters
-        n_folds=8,
-        n_top_bottom_csp_filters=5,
-        n_selected_filterbands=None,
-        n_selected_features=20,
-        forward_steps=2,
-        backward_steps=1,
-        stop_when_no_improvement=False,
-        shuffle=False,
-        average_trial_covariance=True
+        n_folds=2,  # Schirrmeister: ?
+        n_top_bottom_csp_filters=5,  # Schirrmeister: 5
+        n_selected_filterbands=None,  # Schirrmeister: None
+        n_selected_features=20,  # Schirrmeister: 20
+        forward_steps=2,  # Schirrmeister: 2
+        backward_steps=1,  # Schirrmeister: 1
+        stop_when_no_improvement=False,  # Schirrmeister: False
+        shuffle=False,  # Schirrmeister: False
+        average_trial_covariance=True  # Schirrmeister: True
     )
 
     # running the experiment
     exp.run()
 
-    # just jocking
-    print('ciao!')
+    # saving results for this subject
+    ml_results_saver(exp=exp, subj_results_dir=subj_results_dir)
+
+    # computing statistics for this subject
+    CrossValidation.cross_validate(subj_results_dir=subj_results_dir,
+                                   label_names=name_to_start_codes)

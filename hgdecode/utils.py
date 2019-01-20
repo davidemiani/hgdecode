@@ -1,13 +1,16 @@
 import csv
 import sys
 import datetime
+import numpy as np
 import logging as log
 from os import system
 from os import listdir
 from os import makedirs
 from sys import platform
+from pickle import dump
 from os.path import join
 from os.path import exists
+from sklearn.metrics import confusion_matrix
 
 now_dir = ''
 
@@ -174,6 +177,51 @@ def create_log(results_dir,
         bottom_return=1
     )
 
+    # returning subject_results_dir, in some case it can be helpful
+    return subject_results_dir
+
+
+def ml_results_saver(exp, subj_results_dir):
+    for fold_idx in range(exp.n_folds):
+        # computing paths and directories
+        fold_str = str(fold_idx + 1)
+        if len(fold_str) is not 2:
+            fold_str = '0' + fold_str
+        fold_str = 'fold' + fold_str
+        fold_dir = join(subj_results_dir, fold_str)
+        touch_dir(fold_dir)
+        file_path = join(fold_dir, 'fold_stats.pickle')
+
+        # getting accuracies
+        train_acc = exp.multi_class.train_accuracy[fold_idx]
+        test_acc = exp.multi_class.test_accuracy[fold_idx]
+
+        # getting y_true and y_pred for this fold
+        train_true = exp.multi_class.train_labels[fold_idx]
+        train_pred = exp.multi_class.train_predicted_labels[fold_idx]
+        test_true = exp.multi_class.test_labels[fold_idx]
+        test_pred = exp.multi_class.test_predicted_labels[fold_idx]
+
+        # computing confusion matrices
+        train_conf_mtx = confusion_matrix(train_true, train_pred)
+        test_conf_mtx = confusion_matrix(test_true, test_pred)
+
+        # creating results dictionary
+        results = {
+            'train': {
+                'acc': train_acc,
+                'conf_mtx': train_conf_mtx.tolist()
+            },
+            'test': {
+                'acc': test_acc,
+                'conf_mtx': test_conf_mtx.tolist()
+            }
+        }
+
+        # saving results
+        with open(file_path, 'wb') as f:
+            dump(results, f)
+
 
 def csv_manager(csv_path, line):
     if not exists(csv_path):
@@ -184,3 +232,76 @@ def csv_manager(csv_path, line):
         with open(csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerows([line])
+
+
+def get_metrics_from_conf_mtx(conf_mtx, label_names=None):
+    # creating standard label_names if not specified
+    if label_names is None:
+        label_names = ['label ' + str(x) for x in range(len(conf_mtx))]
+
+    # computing true/false positive/negative from confusion matrix
+    TP = np.diag(conf_mtx)
+    FP = conf_mtx.sum(axis=0) - TP
+    FN = conf_mtx.sum(axis=1) - TP
+    TN = conf_mtx.sum() - (FP + FN + TP)
+
+    # parsing to float
+    TP = TP.astype(float)
+    TN = TN.astype(float)
+    FP = FP.astype(float)
+    FN = FN.astype(float)
+
+    # computing true positive rate (sensitivity, hit rate, recall)
+    TPR = TP / (TP + FN)
+
+    # computing true negative rate (specificity)
+    TNR = TN / (TN + FP)
+
+    # computing positive predictive value (precision)
+    PPV = TP / (TP + FP)
+
+    # computing negative predictive value
+    NPV = TN / (TN + FN)
+
+    # computing false positive rate (fall out)
+    FPR = FP / (FP + TN)
+
+    # computing false negative rate
+    FNR = FN / (TP + FN)
+
+    # computing false discovery rate
+    FDR = FP / (TP + FP)
+
+    # computing f1-score
+    F1 = 2 * TP / (2 * TP + FP + FN)
+
+    # computing accuracy on single label
+    ACC = (TP + TN) / (TP + FP + FN + TN)
+
+    # computing overall accuracy
+    acc = TP.sum() / conf_mtx.sum()
+
+    # pre-allocating metrics_report
+    metrics_report = {x: None for x in label_names}
+    metrics_report['acc'] = acc
+
+    # filling metrics_report
+    for idx, label in enumerate(label_names):
+        metrics_report[label] = {
+            'TP': TP[idx],
+            'TN': TN[idx],
+            'FP': FP[idx],
+            'FN': FN[idx],
+            'TPR': TPR[idx],
+            'TNR': TNR[idx],
+            'PPV': PPV[idx],
+            'NPV': NPV[idx],
+            'FPR': FPR[idx],
+            'FNR': FNR[idx],
+            'FDR': FDR[idx],
+            'F1': F1[idx],
+            'ACC': ACC[idx]
+        }
+
+    # returning metrics_report
+    return metrics_report

@@ -1,6 +1,7 @@
 import sys
 import time
 import matplotlib.pyplot as plt
+from os import listdir
 from pylab import savefig
 from numpy import std
 from numpy import ceil
@@ -9,6 +10,7 @@ from numpy import log10
 from numpy import floor
 from numpy import zeros
 from numpy import round
+from numpy import array
 from numpy import arange
 from numpy import unique
 from numpy import repeat
@@ -23,13 +25,16 @@ from pickle import dump
 from pickle import load
 from os.path import join
 from os.path import exists
+from os.path import dirname
 from os.path import basename
 from collections import OrderedDict
 from keras.utils import Sequence
 from keras.utils import to_categorical
 from keras.callbacks import Callback
+from hgdecode.utils import touch_dir
 from hgdecode.utils import csv_manager
 from hgdecode.utils import print_manager
+from hgdecode.utils import get_metrics_from_conf_mtx
 from sklearn.metrics import confusion_matrix
 from braindecode.datautil.iterators import get_balanced_batches
 
@@ -778,31 +783,40 @@ class CrossValidation(object):
         )
 
     @staticmethod
-    def cross_validate(subj_results_dir, figures_dir, tables_dir):
+    def cross_validate(subj_results_dir, label_names=None):
         # printing the start
         print_manager('RUNNING CROSS-VALIDATION', 'double-dashed')
 
         # getting fold file paths
         file_paths = CrossValidation.fold_file_paths(subj_results_dir)
 
-        # figures
-        CrossValidation.figures_manager(file_paths, figures_dir)
+        # getting figures and tables directories
+        figures_dir, tables_dir = \
+            CrossValidation.get_figures_and_tables_dirs(subj_results_dir)
+
+        # determining if ml or dl
+        learning_type = CrossValidation.get_learning_type(subj_results_dir)
+
+        # figures (only if deep learning)
+        if learning_type == 'dl':
+            CrossValidation.figures_manager(file_paths, figures_dir)
 
         # tables
-        CrossValidation.tables_manager(file_paths, tables_dir)
+        CrossValidation.tables_manager(file_paths=file_paths,
+                                       tables_dir=tables_dir,
+                                       label_names=label_names,
+                                       learning_type=learning_type)
 
         # printing the end
         print_manager('CROSS-VALIDATION ENDED', 'last', bottom_return=1)
 
     @staticmethod
     def fold_file_paths(subj_results_dir):
-        from os import listdir
-        from os.path import join
         # getting all fold directories paths
         fold_list = listdir(subj_results_dir)
         fold_list.sort()
 
-        # deleting unuseful stuff
+        # deleting useless stuff
         if '.DS_Store' in fold_list:
             fold_list.remove('.DS_Store')
 
@@ -812,6 +826,23 @@ class CrossValidation(object):
 
         # returning fold file paths
         return file_paths
+
+    @staticmethod
+    def get_figures_and_tables_dirs(subj_results_dir, learning_type='dl'):
+        statistics_dir = join(dirname(subj_results_dir), 'statistics')
+        if learning_type == 'dl':
+            subj_str = basename(subj_results_dir)
+            figures_dir = join(statistics_dir, 'figures', subj_str)
+            touch_dir(figures_dir)
+        else:
+            figures_dir = None
+        tables_dir = join(statistics_dir, 'tables')
+        touch_dir(tables_dir)
+        return figures_dir, tables_dir
+
+    @staticmethod
+    def get_learning_type(subj_results_dir):
+        return basename(dirname(dirname(dirname(subj_results_dir))))
 
     @staticmethod
     def load_results(file_paths, loss_acc, train_valid):
@@ -1027,60 +1058,118 @@ class CrossValidation(object):
         savefig(plot_path)
 
     @staticmethod
-    def tables_manager(file_paths, tables_dir):
-        # pre-allocating a new csv row
-        csv_loss = []
-        csv_acc = []
+    def tables_manager(file_paths,
+                       tables_dir,
+                       label_names=None,
+                       learning_type='dl'):
+        # saving label metrics
+        CrossValidation.save_label_metrics(file_paths=file_paths,
+                                           tables_dir=tables_dir,
+                                           label_names=label_names)
 
-        # cycling on pickle files
-        for idx, file in enumerate(file_paths):
-            # getting results from pickle file
-            with open(file, 'rb') as f:
-                results = load(f)
+        # saving overall metrics
+        CrossValidation.save_overall_metrics(file_paths=file_paths,
+                                             tables_dir=tables_dir,
+                                             learning_type=learning_type)
 
-            # appending new values to csv new line
-            csv_loss.append(results['test']['loss'])
-            csv_acc.append(results['test']['acc'])
+    @staticmethod
+    def save_label_metrics(file_paths, tables_dir, label_names):
+        # TODO: improve nested cycles (this is a fast/naive implementation)
+        # parsing ordered dict label names to list of str
+        label_names = list(label_names.keys())
+        label_codes = [x.replace(' ', '') for x in label_names]
 
-            # printing information
-            print(
-                'fold', idx + 1,
-                '| best epoch: {}'.format(results['best']['idx'] + 1),
-                '| with loss: {0:.4f}'.format(csv_loss[-1]),
-                '| and acc: {0:.4f}'.format(csv_acc[-1])
-            )
+        # declaring metrics to save
+        metrics_codes = ['TPR', 'TNR', 'PPV', 'F1']
+        metrics_names = ['sens', 'spec', 'prec', 'f1']
 
-        # computing mean (cross-validation)
-        csv_loss.append(mean(csv_loss))
-        csv_acc.append(mean(csv_acc))
+        # cycling on label
+        for label_code, label_name in zip(label_codes, label_names):
+            # pointing to this label directory
+            label_dir = join(tables_dir, label_code)
+            touch_dir(label_dir)
 
-        # printing also this info on mean
-        print(
-            'mean  ',
-            '|', ' ' * 15,
-            '| with loss: {0:.4f}'.format(csv_loss[-1]),
-            '| and acc: {0:.4f}'.format(csv_acc[-1])
-        )
+            # cycling on metrics
+            for metric_code, metric_name in zip(metrics_codes, metrics_names):
+                # pre-allocating csv list
+                csv = []
 
-        # creating csv loss and acc paths
-        csv_loss_path = join(tables_dir, 'loss.csv')
-        csv_acc_path = join(tables_dir, 'acc.csv')
+                # cycling on pickle files (for each fold)
+                for file in file_paths:
+                    # getting results from pickle file
+                    with open(file, 'rb') as f:
+                        results = load(f)
 
-        # # code to remove out of coding phase
-        # from os import remove
-        # from os.path import exists
-        # if exists(csv_loss_path):
-        #     remove(csv_loss_path)
-        # if exists(csv_acc_path):
-        #     remove(csv_acc_path)
+                    # getting confusion matrix
+                    conf_mtx = array(results['test']['conf_mtx'])
 
-        # creating csv files in necessary
-        if not exists(csv_loss_path):
-            header = ['fold0' + str(x + 1) for x in range(len(file_paths))]
-            header.append('mean')
-            csv_manager(csv_loss_path, header)
-            csv_manager(csv_acc_path, header)
+                    # computing metrics_report
+                    metrics_report = get_metrics_from_conf_mtx(
+                        conf_mtx=conf_mtx,
+                        label_names=label_names
+                    )
 
-        # adding new row
-        csv_manager(csv_loss_path, csv_loss)
-        csv_manager(csv_acc_path, csv_acc)
+                    # appending new values to csv new line
+                    csv.append(metrics_report[label_name][metric_code])
+
+                # at the end of this new csv line, adding mean and std
+                m = mean(csv)
+                s = std(csv)
+                csv.append(m)
+                csv.append(s)
+
+                # creating csv path
+                csv_path = join(label_dir, metric_name + '.csv')
+
+                # creating csv files in necessary
+                if not exists(csv_path):
+                    header = ['fold0' + str(x + 1) for x in
+                              range(len(file_paths))]
+                    header.append('mean')
+                    header.append('std')
+                    csv_manager(csv_path, header)
+
+                # adding new row
+                csv_manager(csv_path, csv)
+
+    @staticmethod
+    def save_overall_metrics(file_paths, tables_dir, learning_type):
+        # pre-allocating metrics_names
+        metrics_names = ['acc']
+
+        # if learning_type is dl, adding loss too
+        if learning_type == 'dl':
+            metrics_names.append('loss')
+
+        # cycling on metrics
+        for metric in metrics_names:
+            # pre-allocate csv list
+            csv = []
+
+            # cycling on pickle files (for each fold)
+            for file in file_paths:
+                # getting results from pickle file
+                with open(file, 'rb') as f:
+                    results = load(f)
+
+                # appending new values to csv new line
+                csv.append(results['test'][metric])
+
+            # at the end of this new csv line, adding mean and std
+            m = mean(csv)
+            s = std(csv)
+            csv.append(m)
+            csv.append(s)
+
+            # creating csv path
+            csv_path = join(tables_dir, metric + '.csv')
+
+            # creating csv files in necessary
+            if not exists(csv_path):
+                header = ['fold0' + str(x + 1) for x in range(len(file_paths))]
+                header.append('mean')
+                header.append('std')
+                csv_manager(csv_path, header)
+
+            # adding new row
+            csv_manager(csv_path, csv)
