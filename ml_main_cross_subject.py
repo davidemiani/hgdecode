@@ -43,7 +43,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 random_seed = RandomState(1234)
 
 # setting subject_ids
-subject_ids = (1, 2)  # , 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # %%
 """
@@ -66,8 +66,8 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          name_to_start_codes=name_to_start_codes,
                          resampling_freq=250,
                          train_test_split=True,
-                         clean_ival_ms=(-500, 0),
-                         epoch_ival_ms=(-500, 0),
+                         clean_ival_ms=(-500, 4000),
+                         epoch_ival_ms=(-500, 4000),
                          clean_on_all_channels=False)
 
 # creating experiment instance
@@ -78,7 +78,7 @@ exp = FBCSPrLDAExperiment(
     name_to_start_codes=name_to_start_codes,
     random_seed=random_seed,
     name_to_stop_codes=None,  # Schirrmeister: None
-    epoch_ival_ms=(-500, 0),  # Schirrmeister: (-500, 4000)
+    epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
     cross_subject_object=cross_obj,
 
     # bank filter-related inputs
