@@ -13,6 +13,7 @@ from os.path import join
 from mne.io.array.array import RawArray
 from hgdecode.utils import print_manager
 from hgdecode.classes import CrossValidation
+from hgdecode.signalproc import bandpass_mne
 from braindecode.datasets.bbci import BBCIDataset
 from braindecode.mne_ext.signalproc import mne_apply
 from braindecode.mne_ext.signalproc import resample_cnt
@@ -250,6 +251,15 @@ def dl_loader(data_dir,
 
 # %% CROSS SUBJECT OBJECT
 class CrossSubject(object):
+    """
+    Nel momento in cui si crea una istanza di questa classe, essa caricherà
+    tutti quanti gli id soggetto indicati in formato cnt con le relative
+    maschere ed un nuovo array che ci dice tutti gli indici in cui iniziano
+    i vari soggetti; inoltre, si andrà poi a specificare volta per volta il
+    tipo di dato che si vorrà avere in memoria utilizzando un metodo parser,
+    che andrà a sovrascrivere i dati nel nuovo formato.
+    """
+
     def __init__(self,
                  data_dir,
                  subject_ids,
@@ -260,15 +270,6 @@ class CrossSubject(object):
                  clean_ival_ms=(-500, 4000),
                  epoch_ival_ms=(-500, 4000),
                  clean_on_all_channels=True):
-        # Nel momento in cui si crea una istanza di questa classe,
-        # essa caricherà tutti quanti gli id soggetto indicati in formato
-        # cnt con le relative maschere ed un nuovo array che ci dice tutti
-        # gli indici in cui iniziano i vari soggetti; inoltre, si andrà poi a
-        # specificare volta per volta il tipo di dato che si vorrà avere in
-        # memoria utilizzando un metodo parser, che andrà a sovrascrivere i
-        # dati nel nuovo formato. SOVRASCRIVERE, non creare una nuova
-        # proprietà dell'oggetto, se no si avrà il doppio della memoria
-        # occupata.
         # from input properties
         self.data_dir = data_dir
         self.subject_ids = subject_ids
@@ -416,6 +417,24 @@ class CrossSubject(object):
                 parsing_type))
         print_manager('DONE!!', bottom_return=1)
         print_manager('We obtained a ' + str(self.fold_data))
+
+    def cnt_to_epo_with_bandpass(self, min_freq, max_freq, filt_order):
+        # TODO: is this method deprecated? Consider to remove it
+        # bandpassing all the cnt RawArray with the current filter
+        self.fold_data = bandpass_mne(
+            self.data, min_freq, max_freq, filt_order=filt_order
+        )
+        print_manager('Parsing cnt signal to epoched one...')
+        self.fold_data = create_signal_target_from_raw_mne(
+            self.fold_data,
+            self.name_to_start_codes,
+            self.epoch_ival_ms
+        )
+        print_manager('DONE!!', bottom_return=1)
+        print_manager('Cleaning epoched signal with mask...')
+        self.fold_data.X = self.fold_data.X[self.clean_trial_mask]
+        self.fold_data.y = self.fold_data.y[self.clean_trial_mask]
+        print_manager('DONE!!', bottom_return=1)
 
     @property
     def n_trials(self):

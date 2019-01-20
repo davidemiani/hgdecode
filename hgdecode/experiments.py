@@ -3,10 +3,8 @@ from os import listdir
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
-from pickle import dump
 from os.path import join
 from itertools import combinations
-from numpy.random import RandomState
 from hgdecode.utils import touch_dir
 from hgdecode.utils import print_manager
 from sklearn.metrics import confusion_matrix
@@ -99,6 +97,7 @@ class FBCSPrLDAExperiment(object):
                  random_seed,
                  name_to_stop_codes=None,
                  epoch_ival_ms=(-500, 4000),
+                 cross_subject_object=None,
 
                  # bank filter-related inputs
                  min_freq=0,
@@ -124,6 +123,12 @@ class FBCSPrLDAExperiment(object):
         self.name_to_start_codes = name_to_start_codes
         self.name_to_stop_codes = name_to_stop_codes
         self.random_seed = random_seed
+        if cross_subject_object is None:
+            self.cross_subject_object = None
+            self.cross_subject_computation = False
+        else:
+            self.cross_subject_object = cross_subject_object
+            self.cross_subject_computation = True
 
         # bank filter-related inputs
         self.min_freq = min_freq
@@ -166,15 +171,23 @@ class FBCSPrLDAExperiment(object):
         )
 
     def create_folds(self):
-        # TODO: add here some code to create fold in case of cross-subject
-        #  validation; then you should be good to go
-        # getting pseudo-random folds
-        folds = get_balanced_batches(
-            n_trials=self.n_trials,
-            rng=self.random_seed,
-            shuffle=self.shuffle,
-            n_batches=self.n_folds
-        )
+        if self.cross_subject_computation is True:
+            folds = [
+                arange(
+                    self.cross_subject_object.subject_indexes[x][0],
+                    self.cross_subject_object.subject_indexes[x][1]
+                )
+                for x in range(len(self.cross_subject_object.subject_indexes))
+            ]
+            self.n_folds = len(folds)
+        else:
+            # getting pseudo-random folds
+            folds = get_balanced_batches(
+                n_trials=self.n_trials,
+                rng=self.random_seed,
+                shuffle=self.shuffle,
+                n_batches=self.n_folds
+            )
 
         # remapping to original indices in unclean set(!)
         # train is everything except fold

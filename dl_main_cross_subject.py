@@ -8,6 +8,11 @@ from hgdecode.loaders import CrossSubject
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
 
+# %%
+"""
+SETTING PARAMETERS
+Here you can set whatever parameter you want
+"""
 # setting model_name
 model_name = 'DeepConvNet'
 
@@ -41,7 +46,16 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # recovery information
 restart_from = (5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-use_last_result_directory = True
+
+# %%
+"""
+STARTING LOADING ROUTINE & COMPUTATION
+Here you can change some parameter in function calls as well
+"""
+if restart_from is None:
+    use_last_result_directory = False
+else:
+    use_last_result_directory = True
 
 # creating a log object
 create_log(
@@ -65,16 +79,13 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          clean_on_all_channels=False)
 
 # if computation crashed, you can restart using only a subject subset
-if restart_from is None:
-    fold_threshold = 0
-    use_last_result_directory = False
-else:
+if restart_from is not None:
     subject_ids = restart_from
-    use_last_result_directory = True
 
 # pre-allocating experiment
 exp = None
 
+# cycling on subject leaved apart
 for leave_subj in subject_ids:
     cross_obj.parser(output_format='EEGDataset',
                      leave_subj=leave_subj,
@@ -115,10 +126,7 @@ for leave_subj in subject_ids:
     # running training
     exp.train()
 
+# at the very end, running cross-validation
 if exp is not None:
-    # computing cross-validation
-    CrossValidation.cross_validate(
-        subj_results_dir=exp.subj_results_dir,
-        figures_dir=exp.figures_dir,
-        tables_dir=exp.tables_dir
-    )
+    CrossValidation.cross_validate(subj_results_dir=exp.subj_results_dir,
+                                   label_names=name_to_start_codes)

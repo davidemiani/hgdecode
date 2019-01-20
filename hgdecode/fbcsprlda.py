@@ -111,8 +111,6 @@ class BinaryFBCSP(object):
             # %% CYCLING ON FOLDS
             # %%
             for fold_nr in range(len(self.folds)):
-                # self.run_fold(epo, bp_nr, fold_nr)
-
                 # printing fold information
                 self.print_fold_nr(fold_nr)
 
