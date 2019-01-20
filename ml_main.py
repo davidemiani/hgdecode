@@ -110,7 +110,7 @@ for subject_id in subject_ids:
         filt_order=3,  # filt_order: 3
 
         # machine learning parameters
-        n_folds=2,  # Schirrmeister: ?
+        n_folds=8,  # Schirrmeister: ?
         n_top_bottom_csp_filters=5,  # Schirrmeister: 5
         n_selected_filterbands=None,  # Schirrmeister: None
         n_selected_features=20,  # Schirrmeister: 20
