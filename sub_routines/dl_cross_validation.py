@@ -4,7 +4,7 @@ from hgdecode.classes import CrossValidation
 
 datetime_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
                'Università di Bologna/TesiMagistrale_DavideMiani/' \
-               'results/hgdecode/dl/DeepConvNet/2019-01-15_01-54-25'
+               'results/hgdecode/dl/DeepConvNet/2019-01-18_13-33-01'
 subj_dirs = os.listdir(datetime_dir)
 subj_dirs.sort()
 subj_dirs.remove('model_report.txt')
