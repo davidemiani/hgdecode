@@ -45,7 +45,7 @@ random_seed = RandomState(1234)
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # recovery information
-restart_from = (5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+restart_from = None
 
 # %%
 """
@@ -74,8 +74,8 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          name_to_start_codes=name_to_start_codes,
                          resampling_freq=250,
                          train_test_split=True,
-                         clean_ival_ms=(-500, 4000),
-                         epoch_ival_ms=(-500, 4000),
+                         clean_ival_ms=(-1000, 1000),
+                         epoch_ival_ms=(-1000, 1000),
                          clean_on_all_channels=False)
 
 # if computation crashed, you can restart using only a subject subset
@@ -105,7 +105,7 @@ for leave_subj in subject_ids:
         # hyperparameters
         dropout_rate=0.5,  # Schirrmeister: 0.5
         learning_rate=1 * 1e-4,  # Schirrmeister: ?
-        batch_size=32,  # Schirrmeister: 512
+        batch_size=64,  # Schirrmeister: 512
         epochs=800,  # Schirrmeister: ?
         early_stopping=False,  # Schirrmeister: ?
         monitor='val_acc',  # Schirrmeister: ?

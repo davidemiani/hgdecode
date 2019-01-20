@@ -305,3 +305,28 @@ def get_metrics_from_conf_mtx(conf_mtx, label_names=None):
 
     # returning metrics_report
     return metrics_report
+
+
+def check_significant_digits(num):
+    num = float(num)
+    if num < 0.01:  # from 0.009999
+        num = np.round(num, 5)
+    elif num < 0.1:  # from 0.09999
+        num = np.round(num, 4)
+    else:
+        num = np.round(num, 3)
+    num = num * 100
+    if num == 0:
+        num = '0'
+    elif num < 1:
+        num = str(num)
+        num += '0' * (5 - len(num))
+    elif num < 10:
+        num = str(num)
+        num += '0' * (4 - len(num))
+    elif num == 100:
+        num = '100'
+    else:
+        num = np.round(num, 1)
+        num = str(num)
+    return num
