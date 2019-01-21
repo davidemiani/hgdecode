@@ -1,32 +1,6 @@
 import os
-import numpy as np
 from csv import reader
-
-
-def check_significant_digits(num):
-    num = float(num)
-    if num < 0.01:  # from 0.009999
-        num = np.round(num, 5)
-    elif num < 0.1:  # from 0.09999
-        num = np.round(num, 4)
-    else:
-        num = np.round(num, 3)
-    num = num * 100
-    if num < 1:
-        num = np.round(num, 3)
-        num = str(num)
-        num += '0' * (5 - len(num))
-    elif num < 10:
-        num = np.round(num, 2)
-        num = str(num)
-        num += '0' * (4 - len(num))
-    elif num == 100:
-        num = '100'
-    else:
-        num = np.round(num, 1)
-        num = str(num)
-    return num
-
+from hgdecode.utils import check_significant_digits
 
 results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'Università di Bologna/TesiMagistrale_DavideMiani/' \

@@ -7,8 +7,8 @@ results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'results/hgdecode'
 learning_type = 'ml'  # dl or ml
 algo_or_model_name = 'FBCSP_rLDA'  # DeepConvNet or FBCSP_rLDA
-datetime = '2019-01-20_11-57-47'
-epoch_ival_ms = '-500, 4000'  # str type
+datetime = '2019-01-21_01-14-34'
+epoch_ival_ms = '-1000, 1000'  # str type
 tables_dir = os.path.join(results_dir,
                           learning_type,
                           algo_or_model_name,
