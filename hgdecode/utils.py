@@ -322,12 +322,12 @@ def check_significant_digits(num):
         num = np.round(num, 3)
         num = str(num)
         num += '0' * (5 - len(num))
-        num = num[0:3]
+        num = num[0:4]
     elif num < 10:
         num = np.round(num, 2)
         num = str(num)
         num += '0' * (4 - len(num))
-        num = num[0:3]
+        num = num[0:4]
     elif num == 100:
         num = '100'
     else:
