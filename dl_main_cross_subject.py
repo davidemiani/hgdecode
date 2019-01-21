@@ -106,7 +106,7 @@ for leave_subj in subject_ids:
         dropout_rate=0.5,  # Schirrmeister: 0.5
         learning_rate=1 * 1e-4,  # Schirrmeister: ?
         batch_size=64,  # Schirrmeister: 512
-        epochs=800,  # Schirrmeister: ?
+        epochs=600,  # Schirrmeister: ?
         early_stopping=False,  # Schirrmeister: ?
         monitor='val_acc',  # Schirrmeister: ?
         min_delta=0.0001,  # Schirrmeister: ?

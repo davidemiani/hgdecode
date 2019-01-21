@@ -66,8 +66,8 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          name_to_start_codes=name_to_start_codes,
                          resampling_freq=250,
                          train_test_split=True,
-                         clean_ival_ms=(-500, 4000),
-                         epoch_ival_ms=(-500, 4000),
+                         clean_ival_ms=(-1000, 1000),
+                         epoch_ival_ms=(-1000, 1000),
                          clean_on_all_channels=False)
 
 # creating experiment instance
@@ -78,7 +78,7 @@ exp = FBCSPrLDAExperiment(
     name_to_start_codes=name_to_start_codes,
     random_seed=random_seed,
     name_to_stop_codes=None,  # Schirrmeister: None
-    epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
+    epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
     cross_subject_object=cross_obj,
 
     # bank filter-related inputs
