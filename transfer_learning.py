@@ -87,6 +87,12 @@ for subject_id in subject_ids:
     # if n_samples_train is not a multiple of 4, putting it to the nearest
     n_trials_train = int(ceil(n_trials_train / 4) * 4)
 
+    # computing batch_size to be...
+    if n_trials_train <= 64:
+        batch_size = int(n_trials_train / 4)
+    else:
+        batch_size = 32
+
     # computing n_folds (using the desired n_samples_train)
     n_folds = int(floor(n_trials / n_trials_train))
 
@@ -135,7 +141,7 @@ for subject_id in subject_ids:
             # hyperparameters
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=1 * 1e-4,  # Schirrmeister: ?
-            batch_size=64,  # Schirrmeister: 512
+            batch_size=batch_size,  # Schirrmeister: 512
             epochs=400,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
