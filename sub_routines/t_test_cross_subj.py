@@ -9,8 +9,8 @@ results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'results/hgdecode'
 ml_algorithm = 'FBCSP_rLDA'
 dl_model = 'DeepConvNet'
-ml_datetime = ['2019-01-20_11-57-47']
-dl_datetime = ['2019-01-18_13-33-01']
+ml_datetime = ['2019-01-21_01-14-34']
+dl_datetime = ['2019-01-21_11-38-41']
 
 for ml_dt, dl_dt in zip(ml_datetime, dl_datetime):
     # loading ml accuracies

@@ -5,9 +5,9 @@ from hgdecode.utils import check_significant_digits
 results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'Università di Bologna/TesiMagistrale_DavideMiani/' \
               'results/hgdecode'
-learning_type = 'ml'  # dl or ml
-algo_or_model_name = 'FBCSP_rLDA'  # DeepConvNet or FBCSP_rLDA
-datetime = '2019-01-21_01-14-34'
+learning_type = 'dl'  # dl or ml
+algo_or_model_name = 'DeepConvNet'  # DeepConvNet or FBCSP_rLDA
+datetime = '2019-01-21_11-38-41'
 epoch_ival_ms = '-1000, 1000'  # str type
 tables_dir = os.path.join(results_dir,
                           learning_type,

@@ -334,3 +334,18 @@ def check_significant_digits(num):
         num = np.round(num, 1)
         num = str(num)
     return num
+
+
+def get_subj_str(subj_id):
+    return my_formatter(subj_id, 'subj')
+
+
+def get_fold_str(fold_id):
+    return my_formatter(fold_id, 'fold')
+
+
+def my_formatter(num, name):
+    num_str = str(num)
+    if len(num_str) == 1:
+        num_str = '0' + num_str
+    return name + num_str

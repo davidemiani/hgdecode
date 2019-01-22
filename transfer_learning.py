@@ -1,9 +1,12 @@
 from os import getcwd
+from numpy import ceil
+from numpy import floor
 from os.path import join
 from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.utils import get_fold_str
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
@@ -11,27 +14,8 @@ from hgdecode.experiments import DLExperiment
 """
 SETTING PARAMETERS
 ------------------
-In the following, you have to set / modify all the parameters to use for
-further computation.
-
-Parameters
-----------
-channel_names : list
-    Channels to use for computation
-data_dir : str
-    Path to the directory that contains dataset
-model_name : str
-    Name of the Deep Learning model
-name_to_start_codes : OrderedDict
-    All possible classes names and codes in an ordered dict format
-random_seed : rng seed
-    Seed random for all random calls
-results_dir : str
-    Path to the directory that will contain the results
-subject_ids : tuple
-    All the subject ids in a tuple; add or remove subjects to run the
-    algorithm for them or not
 """
+
 # setting model_name and validation_frac
 model_name = 'DeepConvNet'  # Schirrmeister: 'DeepConvNet' or 'ShallowNet'
 
@@ -63,13 +47,15 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 # setting random seed
 random_seed = RandomState(1234)
 
+# setting cross_subj_dir_name: data from cross-subj computation are stored here
+cross_subj_dir_name = '2019-01-18_13-33-01'
+
+# setting n_trials_train (must be a multiple of 4)
+n_trials_train = 16  # must be integer
+
 """
-MAIN CYCLE
-----------
-For each subject, a new log will be created and the specific dataset loaded;
-this dataset will be used to create an instance of the experiment; then the
-experiment will be run. You can of course change all the experiment inputs
-to obtain different results.
+COMPUTATION
+-----------
 """
 for subject_id in subject_ids:
     # creating a log object
@@ -78,7 +64,8 @@ for subject_id in subject_ids:
         learning_type='dl',
         algorithm_or_model_name=model_name,
         subject_id=subject_id,
-        output_on_file=False
+        output_on_file=False,
+        use_last_result_directory=False
     )
 
     # loading epoched signal
@@ -88,19 +75,40 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=(-500, 4000),  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
 
+    # getting n_trials
+    n_trials = len(epo.y)
+
+    # if n_samples_train is not a multiple of 4, putting it to the nearest
+    n_trials_train = int(ceil(n_trials_train / 4) * 4)
+
+    # computing n_folds (using the desired n_samples_train)
+    n_folds = int(floor(n_trials / n_trials_train))
+
+    # computing validation_frac to be...
+    if n_trials_train <= 16:
+        n_trials_valid = n_trials_train
+    elif n_trials_train <= 40:
+        n_trials_valid = int(n_trials_train / 2)
+    elif n_trials_train <= 80:
+        n_trials_valid = int(n_trials_train / 4)
+    else:
+        n_trials_valid = int(round(n_trials * 0.1))
+    validation_frac = n_trials_valid / n_trials
+
     # creating CrossValidation class instance
     cross_validation = CrossValidation(
         epo=epo,
-        n_folds=8,
-        validation_frac=0.1,
+        n_folds=n_folds,
+        validation_frac=validation_frac,
         random_seed=random_seed,
-        shuffle=True
+        shuffle=True,
+        swap_train_test=True
     )
 
     # pre-allocating experiment
@@ -145,10 +153,21 @@ for subject_id in subject_ids:
             save_model_at_each_epoch=False
         )
 
+        # loading model weights from cross-subject pre-trained model
+        exp.model.load_weights(join(results_dir,
+                                    'dl',
+                                    model_name,
+                                    cross_subj_dir_name,
+                                    'subj_cross',
+                                    get_fold_str(subject_id),
+                                    'net_best_val_loss.h5'
+                                    ))
+
         # training
         exp.train()
 
+    # computing cross-validation
     if exp is not None:
-        # computing cross-validation
-        cross_validation.cross_validate(subj_results_dir=exp.subj_results_dir,
-                                        label_names=name_to_start_codes)
+        cross_validation.cross_validate(
+            subj_results_dir=exp.subj_results_dir,
+            label_names=name_to_start_codes)

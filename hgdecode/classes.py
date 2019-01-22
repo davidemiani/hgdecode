@@ -739,7 +739,8 @@ class CrossValidation(object):
                  n_folds=8,
                  validation_frac=0.1,
                  random_seed=None,
-                 shuffle=True):
+                 shuffle=True,
+                 swap_train_test=False):
         # generating random seed if not an input
         if random_seed is None:
             random_seed = RandomState(1234)
@@ -765,11 +766,21 @@ class CrossValidation(object):
             for fold in folds
         ]
 
+        # determining validation size
+        validation_size = int(round(n_trials * validation_frac))
+
         # getting validation and reshaping train
         for idx, current_fold in enumerate(self.folds):
-            validation_size = int(round(n_trials * validation_frac))
             self.folds[idx]['valid'] = current_fold['train'][-validation_size:]
             self.folds[idx]['train'] = current_fold['train'][:-validation_size]
+
+        # swapping train & test if necessary; this it could be useful in
+        # transfer learning algorithm
+        if swap_train_test is True:
+            for idx in range(len(self.folds)):
+                temp = self.folds[idx]['test']
+                self.folds[idx]['test'] = self.folds[idx]['train']
+                self.folds[idx]['train'] = temp
 
     @staticmethod
     def create_dataset_for_fold(epo, fold):
