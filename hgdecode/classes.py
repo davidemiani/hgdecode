@@ -736,11 +736,13 @@ class ProgressBar(object):
 class CrossValidation(object):
     def __init__(self,
                  epo,
+                 batch_size,
                  n_folds=8,
                  validation_frac=0.1,
                  random_seed=None,
                  shuffle=True,
-                 swap_train_test=False):
+                 swap_train_test=False
+                 ):
         # generating random seed if not an input
         if random_seed is None:
             random_seed = RandomState(1234)
@@ -781,6 +783,20 @@ class CrossValidation(object):
                 temp = self.folds[idx]['test']
                 self.folds[idx]['test'] = self.folds[idx]['train']
                 self.folds[idx]['train'] = temp
+
+        # # forcing train size to be a batch_size multiplier
+        # for idx in range(len(self.folds)):
+        #     displaced_trials = len(self.folds[idx]['train']) % batch_size
+        #     if displaced_trials != 0:
+        #         self.folds[idx]['test'] = concatenate(
+        #             (
+        #                 self.folds[idx]['test'],
+        #                 array(self.folds[idx]['train'][-displaced_trials])
+        #             ),
+        #             axis=None
+        #         )
+        #         self.folds[idx]['train'] = \
+        #             self.folds[idx]['train'][:-displaced_trials]
 
     @staticmethod
     def create_dataset_for_fold(epo, fold):

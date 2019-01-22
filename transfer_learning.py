@@ -1,6 +1,7 @@
 from os import getcwd
 from numpy import ceil
 from numpy import floor
+from numpy import round
 from os.path import join
 from os.path import dirname
 from collections import OrderedDict
@@ -42,7 +43,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random seed
 random_seed = RandomState(1234)
@@ -51,7 +52,7 @@ random_seed = RandomState(1234)
 cross_subj_dir_name = '2019-01-18_13-33-01'
 
 # setting n_trials_train (must be a multiple of 4)
-n_trials_train = 16  # must be integer
+n_trials_train = 32  # must be integer
 
 """
 COMPUTATION
@@ -89,7 +90,7 @@ for subject_id in subject_ids:
 
     # computing batch_size to be...
     if n_trials_train <= 64:
-        batch_size = int(n_trials_train / 4)
+        batch_size = int(n_trials_train / 2)
     else:
         batch_size = 32
 
@@ -97,12 +98,8 @@ for subject_id in subject_ids:
     n_folds = int(floor(n_trials / n_trials_train))
 
     # computing validation_frac to be...
-    if n_trials_train <= 16:
+    if n_trials_train <= 48:
         n_trials_valid = n_trials_train
-    elif n_trials_train <= 40:
-        n_trials_valid = int(n_trials_train / 2)
-    elif n_trials_train <= 80:
-        n_trials_valid = int(n_trials_train / 4)
     else:
         n_trials_valid = int(round(n_trials * 0.1))
     validation_frac = n_trials_valid / n_trials
@@ -110,6 +107,7 @@ for subject_id in subject_ids:
     # creating CrossValidation class instance
     cross_validation = CrossValidation(
         epo=epo,
+        batch_size=batch_size,
         n_folds=n_folds,
         validation_frac=validation_frac,
         random_seed=random_seed,
@@ -140,9 +138,9 @@ for subject_id in subject_ids:
 
             # hyperparameters
             dropout_rate=0.5,  # Schirrmeister: 0.5
-            learning_rate=1 * 1e-4,  # Schirrmeister: ?
+            learning_rate=5 * 1e-6,  # Schirrmeister: ?
             batch_size=batch_size,  # Schirrmeister: 512
-            epochs=400,  # Schirrmeister: ?
+            epochs=2,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
