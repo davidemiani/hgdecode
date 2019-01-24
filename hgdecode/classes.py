@@ -843,6 +843,25 @@ class CrossValidation(object):
     def train_set_size(self):
         return self.fold_size * (self.n_folds - 1)
 
+    def print_fold_classes(self, fold_idx):
+        print('FOLD INFORMATION:')
+        fold = self.folds[fold_idx]
+        to_print_list = ['train', 'valid', 'test']
+        if self.validation_frac == 0:
+            to_print_list.remove('valid')
+        for batch_str in to_print_list:
+            print(batch_str)
+            batch_lab = self.y[fold[batch_str]]
+            for class_idx in range(self.n_classes):
+                print(
+                    'Class {}: {} trials'.format(
+                        class_idx,
+                        batch_lab.tolist().count(class_idx)
+                        )
+                      )
+            print()
+
+
     def create_dataset(self, fold):
         return EEGDataset(
             epo_train_x=self.X[fold['train'], ...],

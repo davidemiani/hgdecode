@@ -109,6 +109,9 @@ for subject_id in subject_ids:
 
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
+        # printing fold information
+        cross_validation.print_fold_classes(fold_idx)
+
         # creating EEGDataset for current fold
         dataset = cross_validation.create_dataset(fold=current_fold)
 
