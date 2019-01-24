@@ -17,6 +17,7 @@ from numpy import append
 from numpy import random
 from numpy import newaxis
 from numpy import linspace
+from numpy import setdiff1d
 from numpy import concatenate
 from numpy.random import RandomState
 from pickle import dump
@@ -35,6 +36,7 @@ from hgdecode.utils import print_manager
 from hgdecode.utils import get_metrics_from_conf_mtx
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold
+from braindecode.datautil.iterators import get_balanced_batches
 
 
 class FilterBank(object):
@@ -739,7 +741,7 @@ class CrossValidation(object):
     def __init__(self, X, y,
                  n_folds=None, fold_size=None,
                  validation_frac=None, validation_size=None,
-                 random_state=None, shuffle=True,
+                 balanced_folds=False, random_state=None, shuffle=True,
                  swap_train_test=False):
         # saving data, label and batch_size
         self.X = X
@@ -753,6 +755,7 @@ class CrossValidation(object):
 
         # saving other inputs
         self.shuffle = shuffle
+        self.balanced_folds = balanced_folds
         self.swap_train_test = swap_train_test
 
         # computing n_folds and fold_size
@@ -781,9 +784,17 @@ class CrossValidation(object):
             self.validation_frac = self.validation_size / self.n_trials
 
         # creating folds
-        self._create_balanced_folds()
+        if self.balanced_folds is True:
+            self._create_balanced_folds()
+        else:
+            self._create_robintibor_balanced_folds()
 
     def _create_balanced_folds(self):
+        """
+        NEW BALANCED BATCHES ROUTINE
+        ----------------------------
+        With StratifiedKFold both on testing and validation
+        """
         # creating balanced folds
         self.folds = []
         skf = StratifiedKFold(n_splits=self.n_folds,
@@ -826,6 +837,37 @@ class CrossValidation(object):
                 temp = self.folds[idx]['test']
                 self.folds[idx]['test'] = self.folds[idx]['train']
                 self.folds[idx]['train'] = temp
+
+    def _create_robintibor_balanced_folds(self):
+        """
+        OLD BALANCED BATCHES ROUTINE
+        ----------------------------
+        Using robintibor ml routine
+        """
+        # getting pseudo-random folds
+        folds = get_balanced_batches(
+            n_trials=self.n_trials,
+            rng=self.random_state,
+            shuffle=self.shuffle,
+            n_batches=self.n_folds
+        )
+
+        # train is everything except fold; test is fold indexes
+        self.folds = [
+            {
+                'train': setdiff1d(arange(self.n_trials), fold),
+                'valid': None,
+                'test': fold
+            }
+            for fold in folds
+        ]
+
+        # getting validation and reshaping train
+        for idx, current_fold in enumerate(self.folds):
+            self.folds[idx]['valid'] = \
+                current_fold['train'][-self.validation_size:]
+            self.folds[idx]['train'] = \
+                current_fold['train'][:-self.validation_size]
 
     def __len__(self):
         return len(self.y)
