@@ -1,7 +1,5 @@
 from os import getcwd
 from numpy import ceil
-from numpy import floor
-from numpy import round
 from os.path import join
 from os.path import dirname
 from collections import OrderedDict
@@ -43,16 +41,17 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
-# setting random seed
-random_seed = RandomState(1234)
+# setting random_state
+random_state = RandomState(1234)
 
 # setting cross_subj_dir_name: data from cross-subj computation are stored here
 cross_subj_dir_name = '2019-01-18_13-33-01'
 
-# setting n_trials_train (must be a multiple of 4)
-n_trials_train = 32  # must be integer
+# setting fold_size: this will be the number of trials for training,
+# so it must be multiple of 4
+fold_size = 4  # must be integer
 
 """
 COMPUTATION
@@ -82,37 +81,26 @@ for subject_id in subject_ids:
         clean_on_all_channels=False  # Schirrmeister: True
     )
 
-    # getting n_trials
-    n_trials = len(epo.y)
-
-    # if n_samples_train is not a multiple of 4, putting it to the nearest
-    n_trials_train = int(ceil(n_trials_train / 4) * 4)
+    # if fold_size is not a multiple of 4, putting it to the nearest
+    fold_size = int(ceil(fold_size / 4) * 4)
 
     # computing batch_size to be...
-    if n_trials_train <= 64:
-        batch_size = int(n_trials_train / 2)
+    if fold_size <= 64:
+        batch_size = int(fold_size / 2)
     else:
         batch_size = 32
 
-    # computing n_folds (using the desired n_samples_train)
-    n_folds = int(floor(n_trials / n_trials_train))
-
-    # computing validation_frac to be...
-    if n_trials_train <= 48:
-        n_trials_valid = n_trials_train
-    else:
-        n_trials_valid = int(round(n_trials * 0.1))
-    validation_frac = n_trials_valid / n_trials
+    # validation_size is equal to fold_size
+    validation_size = fold_size
 
     # creating CrossValidation class instance
     cross_validation = CrossValidation(
-        epo=epo,
-        batch_size=batch_size,
-        n_folds=n_folds,
-        validation_frac=validation_frac,
-        random_seed=random_seed,
-        shuffle=True,
-        swap_train_test=True
+        X=epo.X,
+        y=epo.y,
+        fold_size=fold_size,
+        validation_size=validation_size,
+        random_state=random_state, shuffle=True,
+        swap_train_test=True,
     )
 
     # pre-allocating experiment
@@ -121,10 +109,7 @@ for subject_id in subject_ids:
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
         # creating EEGDataset for current fold
-        dataset = cross_validation.create_dataset_for_fold(
-            epo=epo,
-            fold=current_fold
-        )
+        dataset = cross_validation.create_dataset(fold=current_fold)
 
         # creating experiment instance
         exp = DLExperiment(
@@ -133,7 +118,7 @@ for subject_id in subject_ids:
             model_name=model_name,
             results_dir=results_dir,
             name_to_start_codes=name_to_start_codes,
-            random_seed=random_seed,
+            random_state=random_state,
             fold_idx=fold_idx,
 
             # hyperparameters

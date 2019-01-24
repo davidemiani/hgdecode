@@ -60,8 +60,8 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 # setting subject_ids
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
-# setting random seed
-random_seed = RandomState(1234)
+# setting random_state
+random_state = RandomState(1234)
 
 """
 MAIN CYCLE
@@ -88,18 +88,19 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=(-500, 4000),  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
 
     # creating CrossValidation class instance
     cross_validation = CrossValidation(
-        epo=epo,
+        X=epo.X,
+        y=epo.y,
         n_folds=8,
         validation_frac=0.1,
-        random_seed=random_seed,
+        random_state=random_state,
         shuffle=True
     )
 
@@ -109,10 +110,7 @@ for subject_id in subject_ids:
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
         # creating EEGDataset for current fold
-        dataset = cross_validation.create_dataset_for_fold(
-            epo=epo,
-            fold=current_fold
-        )
+        dataset = cross_validation.create_dataset(fold=current_fold)
 
         # creating experiment instance
         exp = DLExperiment(
@@ -121,14 +119,14 @@ for subject_id in subject_ids:
             model_name=model_name,
             results_dir=results_dir,
             name_to_start_codes=name_to_start_codes,
-            random_seed=random_seed,
+            random_state=random_state,
             fold_idx=fold_idx,
 
             # hyperparameters
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=1 * 1e-4,  # Schirrmeister: ?
-            batch_size=64,  # Schirrmeister: 512
-            epochs=400,  # Schirrmeister: ?
+            batch_size=32,  # Schirrmeister: 512
+            epochs=1000,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?

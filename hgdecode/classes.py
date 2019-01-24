@@ -9,7 +9,6 @@ from numpy import mean
 from numpy import log10
 from numpy import floor
 from numpy import zeros
-from numpy import round
 from numpy import array
 from numpy import arange
 from numpy import unique
@@ -18,7 +17,6 @@ from numpy import append
 from numpy import random
 from numpy import newaxis
 from numpy import linspace
-from numpy import setdiff1d
 from numpy import concatenate
 from numpy.random import RandomState
 from pickle import dump
@@ -36,7 +34,7 @@ from hgdecode.utils import csv_manager
 from hgdecode.utils import print_manager
 from hgdecode.utils import get_metrics_from_conf_mtx
 from sklearn.metrics import confusion_matrix
-from braindecode.datautil.iterators import get_balanced_batches
+from sklearn.model_selection import StratifiedKFold
 
 
 class FilterBank(object):
@@ -734,47 +732,69 @@ class ProgressBar(object):
 
 
 class CrossValidation(object):
-    def __init__(self,
-                 epo,
-                 batch_size,
-                 n_folds=8,
-                 validation_frac=0.1,
-                 random_seed=None,
-                 shuffle=True,
-                 swap_train_test=False
-                 ):
-        # generating random seed if not an input
-        if random_seed is None:
-            random_seed = RandomState(1234)
+    """
+    TODO: description for this class
+    """
 
-        # getting trial number
-        n_trials = len(epo.y)
+    def __init__(self, X, y,
+                 n_folds=None, fold_size=None,
+                 validation_frac=None, validation_size=None,
+                 random_state=None, shuffle=True,
+                 swap_train_test=False):
+        # saving data, label and batch_size
+        self.X = X
+        self.y = y
 
-        # getting pseudo-random folds
-        folds = get_balanced_batches(
-            n_trials=n_trials,
-            rng=random_seed,
-            shuffle=shuffle,
-            n_batches=n_folds
-        )
+        # saving random state; if it is not specified, creating a 1234 one
+        if random_state is None:
+            self.random_state = RandomState(1234)
+        else:
+            self.random_state = random_state
 
-        # train is everything except fold; test is fold indexes
-        self.folds = [
-            {
-                'train': setdiff1d(arange(n_trials), fold),
-                'valid': None,
-                'test': fold
-            }
-            for fold in folds
-        ]
+        # saving other inputs
+        self.shuffle = shuffle
+        self.swap_train_test = swap_train_test
 
-        # determining validation size
-        validation_size = int(round(n_trials * validation_frac))
+        # computing n_folds and fold_size
+        if fold_size is None:
+            if n_folds is None:
+                raise ValueError('You have to specify at least one of this '
+                                 'two inputs: fold_size, n_folds.')
+            else:
+                self.n_folds = n_folds
+                self.fold_size = int(floor(self.n_trials / self.n_folds))
+        else:
+            self.fold_size = fold_size
+            self.n_folds = int(floor(self.n_trials / self.fold_size))
+
+        # computing validation_frac and validation_size
+        if validation_size is None:
+            if validation_frac is None:
+                self.validation_frac = 0
+                self.validation_size = 0
+            else:
+                self.validation_frac = validation_frac
+                self.validation_size = \
+                    int(floor(self.n_trials * self.validation_frac))
+        else:
+            self.validation_size = validation_size
+            self.validation_frac = self.validation_size / self.n_trials
+
+        # creating real balanced folds
+        self.folds = []
+        skf = StratifiedKFold(n_splits=self.n_folds,
+                              random_state=self.random_state,
+                              shuffle=self.shuffle)
+        for train_idx, test_idx in skf.split(X=self.X, y=self.y):
+            self.folds.append({'train': train_idx, 'test': test_idx})
 
         # getting validation and reshaping train
-        for idx, current_fold in enumerate(self.folds):
-            self.folds[idx]['valid'] = current_fold['train'][-validation_size:]
-            self.folds[idx]['train'] = current_fold['train'][:-validation_size]
+        if validation_size != 0:
+            for idx, current_fold in enumerate(self.folds):
+                self.folds[idx]['valid'] = \
+                    current_fold['train'][-self.validation_size:]
+                self.folds[idx]['train'] = \
+                    current_fold['train'][:-self.validation_size]
 
         # swapping train & test if necessary; this it could be useful in
         # transfer learning algorithm
@@ -784,22 +804,57 @@ class CrossValidation(object):
                 self.folds[idx]['test'] = self.folds[idx]['train']
                 self.folds[idx]['train'] = temp
 
-        # # forcing train size to be a batch_size multiplier
-        # for idx in range(len(self.folds)):
-        #     displaced_trials = len(self.folds[idx]['train']) % batch_size
-        #     if displaced_trials != 0:
-        #         self.folds[idx]['test'] = concatenate(
-        #             (
-        #                 self.folds[idx]['test'],
-        #                 array(self.folds[idx]['train'][-displaced_trials])
-        #             ),
-        #             axis=None
-        #         )
-        #         self.folds[idx]['train'] = \
-        #             self.folds[idx]['train'][:-displaced_trials]
+    def __len__(self):
+        return len(self.y)
+
+    @property
+    def shape(self):
+        return self.X.shape
+
+    @property
+    def n_trials(self):
+        return self.shape[0]
+
+    @property
+    def n_rows(self):
+        return self.shape[1]
+
+    @property
+    def n_cols(self):
+        return self.shape[2]
+
+    @property
+    def n_channels(self):
+        return self.n_rows
+
+    @property
+    def n_samples(self):
+        return self.n_cols
+
+    @property
+    def n_classes(self):
+        return len(unique(self.y))
+
+    @property
+    def test_set_size(self):
+        return self.fold_size
+
+    @property
+    def train_set_size(self):
+        return self.fold_size * (self.n_folds - 1)
+
+    def create_dataset(self, fold):
+        return EEGDataset(
+            epo_train_x=self.X[fold['train'], ...],
+            epo_train_y=self.y[fold['train']],
+            epo_valid_x=self.X[fold['valid'], ...],
+            epo_valid_y=self.y[fold['valid']],
+            epo_test_x=self.X[fold['test'], ...],
+            epo_test_y=self.y[fold['test']]
+        )
 
     @staticmethod
-    def create_dataset_for_fold(epo, fold):
+    def create_dataset_static(epo, fold):
         return EEGDataset(
             epo_train_x=epo.X[fold['train'], ...],
             epo_train_y=epo.y[fold['train']],

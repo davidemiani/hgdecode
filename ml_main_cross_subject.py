@@ -39,8 +39,8 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Rest', [3]),
                                    ('Feet', [4])])
 
-# setting random seed
-random_seed = RandomState(1234)
+# setting random state
+random_state = RandomState(1234)
 
 # setting subject_ids
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
@@ -70,13 +70,19 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          epoch_ival_ms=(-1000, 1000),
                          clean_on_all_channels=False)
 
+"""
+Si potrebbe fare un soft parsing così trova le fold, poi si passa ad exp 
+quello che gli serve (cnt all, clean all, fold all) e si butta tutto il 
+resto...
+"""
+
 # creating experiment instance
 exp = FBCSPrLDAExperiment(
     # signal-related inputs
     cnt=cross_obj.data,
     clean_trial_mask=cross_obj.clean_trial_mask,
     name_to_start_codes=name_to_start_codes,
-    random_seed=random_seed,
+    random_state=random_state,
     name_to_stop_codes=None,  # Schirrmeister: None
     epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
     cross_subject_object=cross_obj,

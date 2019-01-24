@@ -94,7 +94,7 @@ class FBCSPrLDAExperiment(object):
                  cnt,
                  clean_trial_mask,
                  name_to_start_codes,
-                 random_seed,
+                 random_state,
                  name_to_stop_codes=None,
                  epoch_ival_ms=(-500, 4000),
                  cross_subject_object=None,
@@ -122,7 +122,7 @@ class FBCSPrLDAExperiment(object):
         self.epoch_ival_ms = epoch_ival_ms
         self.name_to_start_codes = name_to_start_codes
         self.name_to_stop_codes = name_to_stop_codes
-        self.random_seed = random_seed
+        self.random_state = random_state
         if cross_subject_object is None:
             self.cross_subject_object = None
             self.cross_subject_computation = False
@@ -184,7 +184,7 @@ class FBCSPrLDAExperiment(object):
             # getting pseudo-random folds
             folds = get_balanced_batches(
                 n_trials=self.n_trials,
-                rng=self.random_seed,
+                rng=self.random_state,
                 shuffle=self.shuffle,
                 n_batches=self.n_folds
             )
@@ -271,7 +271,7 @@ class DLExperiment(object):
                  model_name,
                  results_dir,
                  name_to_start_codes,
-                 random_seed,
+                 random_state,
                  fold_idx,
 
                  # hyperparameters
@@ -299,7 +299,7 @@ class DLExperiment(object):
         self.model_name = model_name
         self.results_dir = results_dir
         self.name_to_start_codes = name_to_start_codes
-        self.random_seed = random_seed
+        self.random_state = random_state
         self.fold_idx = fold_idx
 
         # hyperparameters

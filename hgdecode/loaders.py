@@ -4,21 +4,26 @@ from numpy import max
 from numpy import abs
 from numpy import sum
 from numpy import mean
+from numpy import array
+from numpy import floor
+from numpy import delete
+from numpy import repeat
 from numpy import arange
 from numpy import setdiff1d
 from numpy import concatenate
 from numpy import count_nonzero
-from numpy.random import shuffle
+from numpy.random import RandomState
 from os.path import join
 from mne.io.array.array import RawArray
 from hgdecode.utils import print_manager
 from hgdecode.classes import CrossValidation
-from hgdecode.signalproc import bandpass_mne
+from sklearn.model_selection import StratifiedKFold
 from braindecode.datasets.bbci import BBCIDataset
 from braindecode.mne_ext.signalproc import mne_apply
 from braindecode.mne_ext.signalproc import resample_cnt
 from braindecode.mne_ext.signalproc import concatenate_raws_with_events
 from braindecode.datautil.signalproc import bandpass_cnt
+from braindecode.datautil.signal_target import SignalAndTarget
 from braindecode.datautil.trial_segment import \
     create_signal_target_from_raw_mne
 
@@ -265,6 +270,9 @@ class CrossSubject(object):
                  subject_ids,
                  channel_names,
                  name_to_start_codes,
+                 random_state=None,
+                 validation_frac=None,
+                 validation_size=None,
                  resampling_freq=None,
                  train_test_split=True,
                  clean_ival_ms=(-500, 4000),
@@ -281,13 +289,22 @@ class CrossSubject(object):
         self.epoch_ival_ms = epoch_ival_ms
         self.clean_on_all_channels = clean_on_all_channels
 
+        # saving random state; if it is not specified, creating a 1234 one
+        if random_state is None:
+            self.random_state = RandomState(1234)
+        else:
+            self.random_state = random_state
+
         # other object properties
         self.data = None
         self.clean_trial_mask = []
+        self.subject_labels = None
         self.subject_indexes = []
+        self.folds = None
 
         # for fold specific data, creating a blank property
         self.fold_data = None
+        self.fold_subject_labels = None
 
         # loading the first subject (to pre-allocate cnt array)
         temp_cnt, temp_mask = load_and_preprocess_data(
@@ -301,15 +318,19 @@ class CrossSubject(object):
             clean_on_all_channels=self.clean_on_all_channels
         )
 
+        # allocate the first subject_labels
+        temp_labels = repeat(array([subject_ids[0]]), len(temp_mask))
+
         # appending new indexes (only cleaned cnt will count!)
         last_non_zero_len = count_nonzero(self.clean_trial_mask)
         self.subject_indexes.append(
             [last_non_zero_len, last_non_zero_len + count_nonzero(temp_mask)]
         )
 
-        # merging cnt and mask (in this case assigning)
+        # merging cnt, mask and labels (in this case assigning)
         self.data = temp_cnt
         self.clean_trial_mask = temp_mask
+        self.subject_labels = temp_labels
 
         # creating iterable object from subject_ids and skipping the first one
         iter_subjects = iter(self.subject_ids)
@@ -329,6 +350,9 @@ class CrossSubject(object):
                 clean_on_all_channels=self.clean_on_all_channels
             )
 
+            # create the subject_labels for this subject
+            temp_labels = repeat(array([current_subject]), len(temp_mask))
+
             # appending new indexes (only cleaned cnt will count!)
             last_non_zero_len = count_nonzero(self.clean_trial_mask)
             self.subject_indexes.append(
@@ -338,31 +362,51 @@ class CrossSubject(object):
 
             # merging cnt and mask
             self.data = concatenate_raws_with_events([self.data, temp_cnt])
-            self.clean_trial_mask = concatenate((self.clean_trial_mask,
-                                                 temp_mask))
+            self.clean_trial_mask = \
+                concatenate([self.clean_trial_mask, temp_mask])
+            self.subject_labels = \
+                concatenate([self.subject_labels, temp_labels])
 
-    def parser(self,
-               output_format,
-               leave_subj,
-               validation_frac=0.1,
-               parsing_type=0):
-        """if parsing_type is 0 then epoched signal will be saved in
+        # computing validation_frac and validation_size
+        if validation_size is None:
+            if validation_frac is None:
+                self.validation_frac = 0
+                self.validation_size = 0
+            else:
+                self.validation_frac = validation_frac
+                self.validation_size = \
+                    int(floor(self.n_trials * self.validation_frac))
+        else:
+            self.validation_size = validation_size
+            self.validation_frac = self.validation_size / self.n_trials
+
+    def parser(self, output_format, leave_subj=None, parsing_type=0):
+        """
+        HOW DOES IT WORK?
+        -----------------
+        if parsing_type is 0 then epoched signal will be saved in
         fold_data; if parsing_type is 1 then the cnt signal will be replaced
-        with the epoched one"""
-        print_manager('PREPARING FOLD ALL BUT ' + str(leave_subj),
-                      'double-dashed')
+        with the epoched one
+        """
         if output_format is 'epo':
             self.cnt_to_epo(parsing_type=parsing_type)
         elif output_format is 'EEGDataset':
             self.cnt_to_epo(parsing_type=parsing_type)
             self.epo_to_dataset(leave_subj=leave_subj,
-                                validation_frac=validation_frac,
                                 parsing_type=parsing_type)
-        print_manager('DATA READY!!', 'last', bottom_return=1)
 
     def cnt_to_epo(self, parsing_type):
+        # checking if data is cnt; if not, the method will not work
         if isinstance(self.data, RawArray):
-            if parsing_type is 0:
+            """
+            WHATS GOING ON HERE?
+            --------------------
+            If parsing_type is 0, then there will be a 'soft parsing
+            routine', data will parsed and stored in fold_data instead of
+            in the main data property
+            """
+            if parsing_type == 0:
+                # parsing from cnt to epoch
                 print_manager('Parsing cnt signal to epoched one...')
                 self.fold_data = create_signal_target_from_raw_mne(
                     self.data,
@@ -370,11 +414,21 @@ class CrossSubject(object):
                     self.epoch_ival_ms
                 )
                 print_manager('DONE!!', bottom_return=1)
+
+                # cleaning signal and labels with mask
                 print_manager('Cleaning epoched signal with mask...')
                 self.fold_data.X = self.fold_data.X[self.clean_trial_mask]
                 self.fold_data.y = self.fold_data.y[self.clean_trial_mask]
+                self.fold_subject_labels = \
+                    self.subject_labels[self.clean_trial_mask]
                 print_manager('DONE!!', bottom_return=1)
-            elif parsing_type is 1:
+            elif parsing_type == 1:
+                """
+                WHATS GOING ON HERE?
+                --------------------
+                If parsing_type is 1, then the epoched signal will replace 
+                the original one in the data property
+                """
                 print_manager('Parsing cnt signal to epoched one...')
                 self.data = create_signal_target_from_raw_mne(
                     self.data,
@@ -382,59 +436,118 @@ class CrossSubject(object):
                     self.epoch_ival_ms
                 )
                 print_manager('DONE!!', bottom_return=1)
+
+                # cleaning signal and labels
                 print_manager('Cleaning epoched signal with mask...')
                 self.data.X = self.data.X[self.clean_trial_mask]
                 self.data.y = self.data.y[self.clean_trial_mask]
+                self.subject_labels = \
+                    self.subject_labels[self.clean_trial_mask]
                 print_manager('DONE!!', bottom_return=1)
             else:
-                print('WARNING: parsing_type {} not supported.'.format(
-                    parsing_type))
+                raise ValueError(
+                    'parsing_type {} not supported.'.format(parsing_type)
+                )
 
-    def epo_to_dataset(self, leave_subj, validation_frac=0.1, parsing_type=0):
+            # now that we have an epoched signal, we can already create
+            # folds for cross-subject validation
+            self.create_balanced_folds()
+
+    def epo_to_dataset(self, leave_subj, parsing_type=0):
+        print_manager('FOLD ALL BUT ' + str(leave_subj), 'double-dashed')
         print_manager('Creating current fold...')
-        n_trials = self.n_trials
-        test_fold_indexes = self.subject_indexes[leave_subj - 1]
-        test_fold_range = arange(test_fold_indexes[0], test_fold_indexes[1])
-        fold = {'train': setdiff1d(arange(n_trials), test_fold_range),
-                'valid': None,
-                'test': test_fold_range}
-        shuffle(fold['train'])
-        validation_size = int(round(n_trials * validation_frac))
-        fold['valid'] = fold['train'][-validation_size:]
-        fold['train'] = fold['train'][:-validation_size]
+
         print_manager('DONE!!', bottom_return=1)
         print_manager('Parsing epoched signal to EEGDataset...')
         if parsing_type is 0:
-            self.fold_data = CrossValidation.create_dataset_for_fold(
-                self.fold_data, fold
+            self.fold_data = CrossValidation.create_dataset_static(
+                self.fold_data, self.folds[leave_subj - 1]
             )
         elif parsing_type is 1:
-            self.fold_data = CrossValidation.create_dataset_for_fold(
-                self.data, fold
+            self.fold_data = CrossValidation.create_dataset_static(
+                self.data, self.folds[leave_subj - 1]
             )
         else:
-            print('WARNING: parsing_type {} not supported.'.format(
-                parsing_type))
+            raise ValueError(
+                'parsing_type {} not supported.'.format(parsing_type)
+            )
         print_manager('DONE!!', bottom_return=1)
         print_manager('We obtained a ' + str(self.fold_data))
+        print_manager('DATA READY!!', 'last', bottom_return=1)
 
-    def cnt_to_epo_with_bandpass(self, min_freq, max_freq, filt_order):
-        # TODO: is this method deprecated? Consider to remove it
-        # bandpassing all the cnt RawArray with the current filter
-        self.fold_data = bandpass_mne(
-            self.data, min_freq, max_freq, filt_order=filt_order
-        )
-        print_manager('Parsing cnt signal to epoched one...')
-        self.fold_data = create_signal_target_from_raw_mne(
-            self.fold_data,
-            self.name_to_start_codes,
-            self.epoch_ival_ms
-        )
-        print_manager('DONE!!', bottom_return=1)
-        print_manager('Cleaning epoched signal with mask...')
-        self.fold_data.X = self.fold_data.X[self.clean_trial_mask]
-        self.fold_data.y = self.fold_data.y[self.clean_trial_mask]
-        print_manager('DONE!!', bottom_return=1)
+    def create_balanced_folds(self):
+        """
+        IDEONA!! Qui fai per ogni soggetto il suo train valid % invece che
+        su tutti. In questo modo sei sicuro non solo di avere esattamente lo
+        stesso numero di trial/soggetto in valid ma anche di trial/class!
+        """
+        # pre-allocating folds
+        self.folds = []
+        for subj_idx, subj_idxs in enumerate(self.subject_indexes):
+            # getting current test_idxs (all a subject trials)
+            test_idxs = arange(subj_idxs[0], subj_idxs[1])
+
+            # getting train_idxs as all but the current subject
+            train_idxs = setdiff1d(arange(self.n_trials), test_idxs)
+
+            # pre-allocating valid_idxs
+            valid_idxs = array([])
+
+            # if no validation set is required...
+            if self.validation_frac == 0:
+                # setting valid_idxs to None, else...
+                valid_idxs = None
+            else:
+                # ...determining number of splits for this train/validation set
+                n_splits = int(floor(self.validation_frac * 100))
+
+                # getting StratifiesKFold object
+                skf = StratifiedKFold(n_splits=n_splits,
+                                      random_state=self.random_state,
+                                      shuffle=True)
+
+                # cycling on subject in the train fold
+                for c_subj_idx, c_subj_idxs in enumerate(self.subject_indexes):
+                    if c_subj_idx == subj_idx:
+                        # nothing to do
+                        pass
+                    else:
+                        # splitting first subject train / valid
+                        X, y = self._get_subject_data(c_subj_idx)
+
+                        # get batch from StratifiedKFold object
+                        for c_train_idxs, c_valid_idxs in skf.split(X=X, y=y):
+                            # referring c_train_idxs and c_valid_idxs
+                            c_train_idxs += c_subj_idxs[0]
+                            c_valid_idxs += c_subj_idxs[0]
+
+                            # remove this batch indexes from train_idxs
+                            train_idxs = delete(train_idxs, c_valid_idxs)
+
+                            # adding this batch indexes to valid_idxs
+                            valid_idxs = concatenate([valid_idxs,
+                                                      c_valid_idxs])
+
+            # appending new fold
+            self.folds.append(
+                {
+                    'train': train_idxs,
+                    'valid': valid_idxs,
+                    'test': test_idxs
+                }
+            )
+
+    def _get_subject_data(self, subj_idx):
+        init = self.subject_indexes[subj_idx][0]
+        stop = self.subject_indexes[subj_idx][1]
+        ival = arange(init, stop)
+        if isinstance(self.fold_data, SignalAndTarget):
+            return self.fold_data.X[ival], self.fold_data.y[ival]
+        elif isinstance(self.data, SignalAndTarget):
+            return self.data.X[ival], self.data.y[ival]
+        else:
+            raise ValueError('You are trying to get epoched data but you '
+                             'still have to parse cnt data.')
 
     @property
     def n_trials(self):
