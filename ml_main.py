@@ -59,8 +59,8 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 # setting subject_ids
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
-# setting random seed
-random_seed = RandomState(1234)
+# setting random state
+random_state = RandomState(1234)
 
 """
 MAIN CYCLE
@@ -98,7 +98,7 @@ for subject_id in subject_ids:
         cnt=cnt,
         clean_trial_mask=clean_trial_mask,
         name_to_start_codes=name_to_start_codes,
-        random_seed=random_seed,
+        random_state=random_state,
         name_to_stop_codes=None,  # Schirrmeister: None
         epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
 

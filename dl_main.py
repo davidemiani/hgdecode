@@ -4,6 +4,7 @@ from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
@@ -95,7 +96,7 @@ for subject_id in subject_ids:
     )
 
     # creating CrossValidation class instance
-    cross_validation = CrossValidation(
+    cv = CrossValidation(
         X=epo.X,
         y=epo.y,
         n_folds=8,
@@ -108,12 +109,17 @@ for subject_id in subject_ids:
     exp = None
 
     # cycling on folds for cross validation
-    for fold_idx, current_fold in enumerate(cross_validation.folds):
+    for fold_idx, current_fold in enumerate(cv.folds):
         # printing fold information
-        cross_validation.print_fold_classes(fold_idx)
+        print_manager(
+            'SUBJECT {}, FOLD {}'.format(subject_id, fold_idx + 1),
+            print_style='double-dashed'
+        )
+        cv.print_fold_classes(fold_idx)
+        print_manager(print_style='last', bottom_return=1)
 
         # creating EEGDataset for current fold
-        dataset = cross_validation.create_dataset(fold=current_fold)
+        dataset = cv.create_dataset(fold=current_fold)
 
         # creating experiment instance
         exp = DLExperiment(
@@ -129,7 +135,7 @@ for subject_id in subject_ids:
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=1 * 1e-4,  # Schirrmeister: ?
             batch_size=32,  # Schirrmeister: 512
-            epochs=1000,  # Schirrmeister: ?
+            epochs=1,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
@@ -151,5 +157,5 @@ for subject_id in subject_ids:
 
     if exp is not None:
         # computing cross-validation
-        cross_validation.cross_validate(subj_results_dir=exp.subj_results_dir,
-                                        label_names=name_to_start_codes)
+        cv.cross_validate(subj_results_dir=exp.subj_results_dir,
+                          label_names=name_to_start_codes)

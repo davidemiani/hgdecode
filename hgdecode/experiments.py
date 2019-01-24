@@ -346,7 +346,7 @@ class DLExperiment(object):
         self.paths_manager()
 
         # importing model
-        print_manager('IMPORTING & COMPILING MODEL', 'double-dashed')
+        # print_manager('IMPORTING & COMPILING MODEL', 'double-dashed')
         model_inputs_str = ', '.join([str(i) for i in [self.n_classes,
                                                        self.n_channels,
                                                        self.n_samples,
@@ -364,8 +364,8 @@ class DLExperiment(object):
         self.model.compile(loss=self.loss,
                            optimizer=opt,
                            metrics=['accuracy'])
-        self.model.summary()
-        print_manager('DONE!!', print_style='last', bottom_return=1)
+        # self.model.summary()
+        # print_manager('DONE!!', print_style='last', bottom_return=1)
 
     def __repr__(self):
         return '<DLExperiment with model: {:s}>'.format(self.model_name)

@@ -17,7 +17,6 @@ from keras.constraints import max_norm
 from keras.regularizers import l1_l2
 
 
-# TODO: define optimizer in models, so you can specify learning rate
 # TODO: define pool_size, strides and other parameters as experiment
 #  properties, tunable from the user in the main script; then passing the
 #  entire experiment to the model function constructor or each useful

@@ -578,6 +578,8 @@ class MetricsTracker(Callback):
         print_manager('RUNNING TESTING', 'double-dashed')
 
         # loading best net
+        print('BEST NET found at epoch: {}'.format(self.best['idx'] + 1))
+        print('Loading best net weights and testing.')
         self.model.load_weights(self.h5_model_path)
 
         # running test
@@ -924,7 +926,8 @@ class CrossValidation(object):
                         batch_lab.tolist().count(class_idx)
                     )
                 )
-            print()
+            print('-' * 18)
+            print('Total  : {} trials\n'.format(len(fold[batch_str])))
 
     def create_dataset(self, fold):
         return EEGDataset(
