@@ -491,7 +491,7 @@ class CrossSubject(object):
             train_idxs = setdiff1d(arange(self.n_trials), test_idxs)
 
             # pre-allocating valid_idxs
-            valid_idxs = array([])
+            valid_idxs = array([], dtype='int')
 
             # if no validation set is required...
             if self.validation_frac == 0:
@@ -522,11 +522,13 @@ class CrossSubject(object):
                             c_valid_idxs += c_subj_idxs[0]
 
                             # remove this batch indexes from train_idxs
-                            train_idxs = delete(train_idxs, c_valid_idxs)
+                            train_idxs = setdiff1d(train_idxs, c_valid_idxs)
 
                             # adding this batch indexes to valid_idxs
                             valid_idxs = concatenate([valid_idxs,
                                                       c_valid_idxs])
+                            # all is done for this subject!! Breaking cycle
+                            break
 
             # appending new fold
             self.folds.append(

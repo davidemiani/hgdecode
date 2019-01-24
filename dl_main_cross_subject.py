@@ -42,7 +42,7 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 random_state = RandomState(1234)
 
 # setting subject_ids
-subject_ids = (1, 2)  # , 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 """
 STARTING LOADING ROUTINE & COMPUTATION
@@ -78,68 +78,42 @@ for leave_subj in subject_ids:
     cross_obj.parser(output_format='EEGDataset',
                      leave_subj=leave_subj,
                      parsing_type=1)
-    data = cross_obj.fold_data
 
-    print('\nTRAIN:')
-    for idx_class in range(4):
-        print('Class {}: {}'.format(
-            idx_class,
-            data.y_train.tolist().count(idx_class))
-        )
+    # creating experiment instance
+    exp = DLExperiment(
+        # non-default inputs
+        dataset=cross_obj.fold_data,
+        model_name=model_name,
+        results_dir=results_dir,
+        name_to_start_codes=name_to_start_codes,
+        random_state=random_state,
+        fold_idx=leave_subj - 1,
 
-    print('\nVALID:')
-    for idx_class in range(4):
-        print('Class {}: {}'.format(
-            idx_class,
-            data.y_valid.tolist().count(idx_class))
-        )
+        # hyperparameters
+        dropout_rate=0.5,  # Schirrmeister: 0.5
+        learning_rate=1 * 1e-4,  # Schirrmeister: ?
+        batch_size=32,  # Schirrmeister: 512
+        epochs=800,  # Schirrmeister: ?
+        early_stopping=False,  # Schirrmeister: ?
+        monitor='val_acc',  # Schirrmeister: ?
+        min_delta=0.0001,  # Schirrmeister: ?
+        patience=5,  # Schirrmeister: ?
+        loss='categorical_crossentropy',  # Schirrmeister: ad hoc
+        optimizer='Adam',  # Schirrmeister: Adam
+        shuffle=True,  # Schirrmeister: ?
+        crop_sample_size=None,  # Schirrmeister: 1125
+        crop_step=None,  # Schirrmeister: 1
 
-    print('\nTEST:')
-    for idx_class in range(4):
-        print('Class {}: {}'.format(
-            idx_class,
-            data.y_test.tolist().count(idx_class))
-        )
+        # other parameters
+        subject_id='_cross',
+        data_generator=False,  # Schirrmeister: True
+        save_model_at_each_epoch=False
+    )
 
-        #     cross_obj.parser(output_format='EEGDataset',
-        #                      leave_subj=leave_subj,
-        #                      parsing_type=1)
-        #
-        #     # creating experiment instance
-        #     exp = DLExperiment(
-        #         # non-default inputs
-        #         dataset=cross_obj.fold_data,
-        #         model_name=model_name,
-        #         results_dir=results_dir,
-        #         name_to_start_codes=name_to_start_codes,
-        #         random_state=random_state,
-        #         fold_idx=leave_subj - 1,
-        #
-        #         # hyperparameters
-        #         dropout_rate=0.5,  # Schirrmeister: 0.5
-        #         learning_rate=1 * 1e-4,  # Schirrmeister: ?
-        #         batch_size=64,  # Schirrmeister: 512
-        #         epochs=600,  # Schirrmeister: ?
-        #         early_stopping=False,  # Schirrmeister: ?
-        #         monitor='val_acc',  # Schirrmeister: ?
-        #         min_delta=0.0001,  # Schirrmeister: ?
-        #         patience=5,  # Schirrmeister: ?
-        #         loss='categorical_crossentropy',  # Schirrmeister: ad hoc
-        #         optimizer='Adam',  # Schirrmeister: Adam
-        #         shuffle=True,  # Schirrmeister: ?
-        #         crop_sample_size=None,  # Schirrmeister: 1125
-        #         crop_step=None,  # Schirrmeister: 1
-        #
-        #         # other parameters
-        #         subject_id='_cross',
-        #         data_generator=False,  # Schirrmeister: True
-        #         save_model_at_each_epoch=False
-        #     )
-        #
-        #     # running training
-        #     exp.train()
-        #
-        # # at the very end, running cross-validation
-        # if exp is not None:
-        #     CrossValidation.cross_validate(subj_results_dir=exp.subj_results_dir,
-        #                                    label_names=name_to_start_codes)
+    # running training
+    exp.train()
+
+# at the very end, running cross-validation
+if exp is not None:
+    CrossValidation.cross_validate(subj_results_dir=exp.subj_results_dir,
+                                   label_names=name_to_start_codes)
