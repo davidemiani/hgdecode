@@ -780,25 +780,48 @@ class CrossValidation(object):
             self.validation_size = validation_size
             self.validation_frac = self.validation_size / self.n_trials
 
-        # creating real balanced folds
+        # creating folds
+        self._create_balanced_folds()
+
+    def _create_balanced_folds(self):
+        # creating balanced folds
         self.folds = []
         skf = StratifiedKFold(n_splits=self.n_folds,
                               random_state=self.random_state,
                               shuffle=self.shuffle)
         for train_idx, test_idx in skf.split(X=self.X, y=self.y):
-            self.folds.append({'train': train_idx, 'test': test_idx})
+            if self.validation_size != 0:
+                X = self.X[train_idx]
+                y = self.y[train_idx]
+                n_splits = int(floor(len(train_idx) / self.validation_size))
+                skf2 = StratifiedKFold(n_splits=n_splits,
+                                       random_state=self.random_state,
+                                       shuffle=self.shuffle)
+                for split_train_idx, valid_idx in skf2.split(X=X, y=y):
+                    self.folds.append({
+                        'train': split_train_idx,
+                        'valid': valid_idx,
+                        'test': test_idx
+                    })
+                    break
+            else:
+                self.folds.append({
+                    'train': train_idx,
+                    'valid': None,
+                    'test': test_idx
+                })
 
         # getting validation and reshaping train
-        if validation_size != 0:
+        if self.validation_size != 0:
             for idx, current_fold in enumerate(self.folds):
                 self.folds[idx]['valid'] = \
                     current_fold['train'][-self.validation_size:]
                 self.folds[idx]['train'] = \
                     current_fold['train'][:-self.validation_size]
 
-        # swapping train & test if necessary; this it could be useful in
+        # swapping train & test if necessary; this could be useful in
         # transfer learning algorithm
-        if swap_train_test is True:
+        if self.swap_train_test is True:
             for idx in range(len(self.folds)):
                 temp = self.folds[idx]['test']
                 self.folds[idx]['test'] = self.folds[idx]['train']
@@ -857,10 +880,9 @@ class CrossValidation(object):
                     'Class {}: {} trials'.format(
                         class_idx,
                         batch_lab.tolist().count(class_idx)
-                        )
-                      )
+                    )
+                )
             print()
-
 
     def create_dataset(self, fold):
         return EEGDataset(
