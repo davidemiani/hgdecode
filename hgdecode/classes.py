@@ -743,7 +743,7 @@ class CrossValidation(object):
     def __init__(self, X, y,
                  n_folds=None, fold_size=None,
                  validation_frac=None, validation_size=None,
-                 balanced_folds=False, random_state=None, shuffle=True,
+                 balanced_folds=True, random_state=None, shuffle=True,
                  swap_train_test=False):
         # saving data, label and batch_size
         self.X = X
