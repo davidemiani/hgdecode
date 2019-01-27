@@ -824,14 +824,6 @@ class CrossValidation(object):
                     'test': test_idx
                 })
 
-        # getting validation and reshaping train
-        if self.validation_size != 0:
-            for idx, current_fold in enumerate(self.folds):
-                self.folds[idx]['valid'] = \
-                    current_fold['train'][-self.validation_size:]
-                self.folds[idx]['train'] = \
-                    current_fold['train'][:-self.validation_size]
-
         # swapping train & test if necessary; this could be useful in
         # transfer learning algorithm
         if self.swap_train_test is True:

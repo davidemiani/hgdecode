@@ -7,11 +7,11 @@ results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'results/hgdecode'
 learning_type = 'ml'  # dl or ml
 algo_or_model_name = 'FBCSP_rLDA'  # DeepConvNet or FBCSP_rLDA
-datetime = '2019-01-20_05-23-10'
+datetime = '2019-01-26_13-29-38'
 label = 'Feet'  # Feet, LeftHand, Rest or RightHand
 metric_type = 'overall'  # label or overall
 metric = 'acc'
-epoch_ival_ms = '-500, 4000'  # str type
+epoch_ival_ms = '-1500, 500'  # str type
 file_path = os.path.join(results_dir,
                          learning_type,
                          algo_or_model_name,
