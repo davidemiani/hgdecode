@@ -14,6 +14,7 @@
       <w>numdigits</w>
       <w>nyquist</w>
       <w>occurrs</w>
+      <w>perc</w>
       <w>prec</w>
       <w>pred</w>
       <w>preprocess</w>
@@ -27,6 +28,7 @@
       <w>totale</w>
       <w>universita</w>
       <w>whitegrid</w>
+      <w>xticks</w>
     </words>
   </dictionary>
 </component>
