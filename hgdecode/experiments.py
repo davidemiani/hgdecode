@@ -1,11 +1,13 @@
 # General modules
 from os import listdir
+from numpy import load
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
 from os.path import join
 from itertools import combinations
 from hgdecode.utils import touch_dir
+from hgdecode.utils import my_formatter
 from hgdecode.utils import print_manager
 from sklearn.metrics import confusion_matrix
 from multiprocessing import cpu_count
@@ -108,6 +110,7 @@ class FBCSPrLDAExperiment(object):
 
                  # machine learning-related inputs
                  n_folds=5,
+                 fold_file=None,
                  n_top_bottom_csp_filters=None,
                  n_selected_filterbands=None,
                  n_selected_features=None,
@@ -147,6 +150,12 @@ class FBCSPrLDAExperiment(object):
         self.stop_when_no_improvement = stop_when_no_improvement
         self.shuffle = shuffle
         self.average_trial_covariance = average_trial_covariance
+        if fold_file is None:
+            self.fold_file = None
+            self.load_fold_from_file = False
+        else:
+            self.fold_file = fold_file
+            self.load_fold_from_file = True
 
         # other fundamental properties (they will be filled in further
         # computational steps)
@@ -172,6 +181,7 @@ class FBCSPrLDAExperiment(object):
 
     def create_folds(self):
         if self.cross_subject_computation is True:
+            # in case of cross-subject computation
             folds = [
                 arange(
                     self.cross_subject_object.subject_indexes[x][0],
@@ -180,6 +190,16 @@ class FBCSPrLDAExperiment(object):
                 for x in range(len(self.cross_subject_object.subject_indexes))
             ]
             self.n_folds = len(folds)
+            self.folds = [
+                {
+                    'train': setdiff1d(arange(self.n_trials), fold),
+                    'test': fold
+                }
+                for fold in folds
+            ]
+        elif self.load_fold_from_file is True:
+            # in case of pre-batched computation
+            self.folds = load(self.fold_file)['folds']
         else:
             # getting pseudo-random folds
             folds = get_balanced_batches(
@@ -188,17 +208,13 @@ class FBCSPrLDAExperiment(object):
                 shuffle=self.shuffle,
                 n_batches=self.n_folds
             )
-
-        # remapping to original indices in unclean set(!)
-        # train is everything except fold
-        # test is fold indexes
-        self.folds = [
-            {
-                'train': setdiff1d(arange(self.n_trials), fold),
-                'test': fold
-            }
-            for fold in folds
-        ]
+            self.folds = [
+                {
+                    'train': setdiff1d(arange(self.n_trials), fold),
+                    'test': fold
+                }
+                for fold in folds
+            ]
 
     def run(self):
         # printing routine start

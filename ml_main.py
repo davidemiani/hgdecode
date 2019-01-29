@@ -4,6 +4,7 @@ from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.utils import my_formatter
 from hgdecode.utils import ml_results_saver
 from hgdecode.classes import CrossValidation
 from hgdecode.loaders import ml_loader
@@ -62,6 +63,13 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 # setting random state
 random_state = RandomState(1234)
 
+# fold stuff
+n_folds = 2
+fold_dir = join(data_dir, 'stratified_fold', my_formatter(n_folds, 'fold'))
+
+# interval
+ival = (-500, 4000)
+
 """
 MAIN CYCLE
 ----------
@@ -87,7 +95,7 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
+        clean_ival_ms=ival,  # Schirrmeister: (0, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
@@ -100,7 +108,7 @@ for subject_id in subject_ids:
         name_to_start_codes=name_to_start_codes,
         random_state=random_state,
         name_to_stop_codes=None,  # Schirrmeister: None
-        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
+        epoch_ival_ms=ival,  # Schirrmeister: (-500, 4000)
 
         # bank filter-related inputs
         min_freq=[0, 10],  # Schirrmeister: [0, 10]
@@ -110,7 +118,8 @@ for subject_id in subject_ids:
         filt_order=3,  # filt_order: 3
 
         # machine learning parameters
-        n_folds=8,  # Schirrmeister: ?
+        n_folds=n_folds,  # Schirrmeister: ?
+        fold_file=join(fold_dir, my_formatter(subject_id, 'subj') + '.npz'),
         n_top_bottom_csp_filters=5,  # Schirrmeister: 5
         n_selected_filterbands=None,  # Schirrmeister: None
         n_selected_features=20,  # Schirrmeister: 20

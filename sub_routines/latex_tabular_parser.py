@@ -5,13 +5,16 @@ from hgdecode.utils import check_significant_digits
 results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
               'Università di Bologna/TesiMagistrale_DavideMiani/' \
               'results/hgdecode'
-learning_type = 'ml'  # dl or ml
-algo_or_model_name = 'FBCSP_rLDA'  # DeepConvNet or FBCSP_rLDA
-datetime = '2019-01-26_13-29-38'
+learning_type = 'dl'  # dl or ml
+if learning_type == 'ml':
+    algo_or_model_name = 'FBCSP_rLDA'
+else:
+    algo_or_model_name = 'DeepConvNet'
+datetime = '2019-01-27_15-07-56'
 label = 'Feet'  # Feet, LeftHand, Rest or RightHand
 metric_type = 'overall'  # label or overall
 metric = 'acc'
-epoch_ival_ms = '-1500, 500'  # str type
+epoch_ival_ms = '-500,4000'  # str type
 file_path = os.path.join(results_dir,
                          learning_type,
                          algo_or_model_name,
@@ -26,12 +29,16 @@ else:
 with open(file_path) as f:
     csv = list(reader(f))
 
+n_folds = len(csv[0]) - 2
+columns = ['&\\textbf{' + str(x + 1) + '}\n' for x in range(n_folds)]
+
 output = '\\begin{table}[H]\n\\footnotesize\n\\centering\n\\begin{tabular}' + \
-         '{|c|cccccccc|cc|}\n\\hline\n' + \
-         '&\multicolumn{8}{c|}{\\textbf{fold}}& &\n\\\\\n' + \
-         '\\textbf{subj}\n&\\textbf{1}\n&\\textbf{2}\n&\\textbf{3}\n' + \
-         '&\\textbf{4}\n&\\textbf{5}\n&\\textbf{6}\n&\\textbf{7}\n' + \
-         '&\\textbf{8}\n&\\textbf{mean}\n&\\textbf{std}\n\\\\\n\hline\hline\n'
+         '{|c|' + 'c' * n_folds + '|cc|}\n\\hline\n' + \
+         '&\multicolumn{' + str(n_folds) + '}{c|}{\\textbf{fold}}& ' + \
+         '&\n\\\\\n\\textbf{subj}\n'
+for head in columns:
+    output += head
+output += '&\\textbf{mean}\n&\\textbf{std}\n\\\\\n\hline\hline\n'
 
 # removing header
 csv = csv[1:]
@@ -55,8 +62,9 @@ total_m = check_significant_digits(total_m)
 total_s = check_significant_digits(total_s)
 
 caption = learning_type + ' ' + metric + ' ' + epoch_ival_ms
-output += '\\hline\n\\multicolumn{9}{|r|}{\\textbf{media totale}}\n&' + \
-          total_m + '\n&' + total_s + '\n\\\\\n\\hline\n\\end{tabular}\n' + \
+output += '\\hline\n\\multicolumn{' + str(n_folds + 1) + '}' + \
+          '{|r|}{\\textbf{media totale}}\n&' + total_m + '\n&' + \
+          total_s + '\n\\\\\n\\hline\n\\end{tabular}\n' + \
           '\\caption{' + caption + '}\n\\label{' + caption + '}\n' + \
           '\\end{table}'
 print(output)
