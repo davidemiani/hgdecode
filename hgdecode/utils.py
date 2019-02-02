@@ -3,6 +3,7 @@ import sys
 import datetime
 import numpy as np
 import logging as log
+from os import getcwd
 from os import system
 from os import listdir
 from os import makedirs
@@ -10,6 +11,7 @@ from sys import platform
 from pickle import dump
 from os.path import join
 from os.path import exists
+from os.path import dirname
 from sklearn.metrics import confusion_matrix
 
 now_dir = ''
@@ -349,3 +351,72 @@ def my_formatter(num, name):
     if len(num_str) == 1:
         num_str = '0' + num_str
     return name + num_str
+
+
+def get_path(results_dir=None,
+             learning_type='dl',
+             algorithm_or_model_name=None,
+             epoching=(-500, 4000),
+             fold_type='single_subject',
+             n_folds=2,
+             deprecated=False):
+    # checking results_dir
+    if results_dir is None:
+        results_dir = join(dirname(dirname(dirname(getcwd()))), 'results')
+
+    # checking algorithm_or_model_name
+    if algorithm_or_model_name is None:
+        if learning_type == 'ml':
+            algorithm_or_model_name = 'FBCSP_rLDA'
+        elif learning_type == 'dl':
+            algorithm_or_model_name = 'DeepConvNet'
+        else:
+            raise ValueError(
+                'Invalid learning_type inputed: {}'.format(learning_type)
+            )
+
+    # checking epoching
+    if epoching.__class__ is tuple or epoching.__class__ is list:
+        epoching_str = str(epoching[0]) + '_' + str(epoching[1])
+    elif epoching.__class__ is str:
+        epoching_str = epoching
+    else:
+        raise ValueError(
+            'Invalid epoching type: {}'.format(epoching.__class__)
+        )
+
+    # checking fold_type
+    folder = ''
+    if fold_type == 'schirrmeister':
+        folder += '1'
+    elif fold_type == 'single_subject':
+        if epoching_str == '-500_4000':
+            folder += '2'
+        elif epoching_str == '-1000_1000':
+            folder += '3'
+        elif epoching_str == '-1500_500':
+            folder += '4'
+    elif fold_type == 'cross_subject':
+        if epoching_str == '-500_4000':
+            folder += '5'
+        elif epoching_str == '-1000_1000':
+            folder += '6'
+    elif fold_type == 'transfer_learning':
+        folder += '7'
+    else:
+        raise ValueError(
+            'Invalid fold_type: {}'.format(fold_type)
+        )
+    folder += '_' + fold_type + '_' + epoching_str
+
+    if deprecated is True:
+        folder = join('0_deprecated', folder)
+
+    folder_path = join(results_dir,
+                       'hgdecode',
+                       learning_type,
+                       algorithm_or_model_name,
+                       folder,
+                       my_formatter(n_folds, 'fold'))
+
+    return join(folder_path, listdir(folder_path)[0])

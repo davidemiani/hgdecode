@@ -2,35 +2,76 @@ import os
 from csv import reader
 from numpy import array
 from scipy.stats import ttest_rel
+from hgdecode.utils import get_path
 
-# defining path parameters (you can change stuff here)
-results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
-              'Università di Bologna/TesiMagistrale_DavideMiani/' \
-              'results/hgdecode'
-ml_algorithm = 'FBCSP_rLDA'
-dl_model = 'DeepConvNet'
-ml_datetime = ['2019-01-26_18-54-54',
-               '2019-01-26_20-42-32',
-               '2019-01-26_23-46-51']
-dl_datetime = ['2019-01-27_08-52-08',
-               '2019-01-27_15-07-56',
-               '2019-01-28_02-36-11']
+"""
+TRAINING 1
+"""
+results_dir = None
+learning_type = 'ml'
+algorithm_or_model_name = None
+epoching = '-500_4000'
+fold_type = 'single_subject'
+n_folds_list = [2, 4, 6, 8, 10]  # must be a list of integer
+deprecated = False
+folder_paths_1 = [
+    get_path(
+        results_dir=results_dir,
+        learning_type=learning_type,
+        algorithm_or_model_name=algorithm_or_model_name,
+        epoching=epoching,
+        fold_type=fold_type,
+        n_folds=x,
+        deprecated=deprecated
+    )
+    for x in n_folds_list
+]
 
-for ml_dt, dl_dt in zip(ml_datetime, dl_datetime):
-    # loading ml accuracies
-    ml_acc_csv_path = os.path.join(results_dir, 'ml', ml_algorithm, ml_dt,
-                                   'statistics', 'tables', 'acc.csv')
-    with open(ml_acc_csv_path) as f:
-        ml_csv = list(reader(f))
-    ml_accs = array([float(ml_csv[x][-2]) for x in range(1, len(ml_csv))])
+"""
+TRAINING 2
+"""
+results_dir = None
+learning_type = 'dl'
+algorithm_or_model_name = None
+epoching = '-500_4000'
+fold_type = 'single_subject'
+n_folds_list = [2, 4, 6, 8, 10]  # must be a list of integer
+deprecated = False
+folder_paths_2 = [
+    get_path(
+        results_dir=results_dir,
+        learning_type=learning_type,
+        algorithm_or_model_name=algorithm_or_model_name,
+        epoching=epoching,
+        fold_type=fold_type,
+        n_folds=x,
+        deprecated=deprecated
+    )
+    for x in n_folds_list
+]
 
-    # loading dl accuracies
-    dl_acc_csv_path = os.path.join(results_dir, 'dl', dl_model, dl_dt,
-                                   'statistics', 'tables', 'acc.csv')
-    with open(dl_acc_csv_path) as f:
-        dl_csv = list(reader(f))
-    dl_accs = array([float(dl_csv[x][-2]) for x in range(1, len(dl_csv))])
+"""
+T-TESTING
+"""
+for training_1, training_2 in zip(folder_paths_1, folder_paths_2):
+    # loading training_1 accuracies
+    training_1_acc_csv_path = os.path.join(training_1,
+                                           'statistics', 'tables', 'acc.csv')
+    with open(training_1_acc_csv_path) as f:
+        training_1_csv = list(reader(f))
+    training_1_accs = array([
+        float(training_1_csv[x][-2]) for x in range(1, len(training_1_csv))
+    ])
+
+    # loading training_2 accuracies
+    training_2_acc_csv_path = os.path.join(training_2,
+                                           'statistics', 'tables', 'acc.csv')
+    with open(training_2_acc_csv_path) as f:
+        training_2_csv = list(reader(f))
+    training_2_accs = array([
+        float(training_2_csv[x][-2]) for x in range(1, len(training_2_csv))
+    ])
 
     # running t-test
-    statistic, p_value = ttest_rel(ml_accs, dl_accs)
+    statistic, p_value = ttest_rel(training_1_accs, training_2_accs)
     print(p_value)

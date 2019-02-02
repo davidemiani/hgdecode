@@ -64,7 +64,7 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 random_state = RandomState(1234)
 
 # fold stuff
-n_folds = 2
+n_folds = 6
 fold_dir = join(data_dir, 'stratified_fold', my_formatter(n_folds, 'fold'))
 
 # interval

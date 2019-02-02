@@ -1,31 +1,49 @@
 import os
 from csv import reader
+from hgdecode.utils import get_path
 from hgdecode.utils import check_significant_digits
 
-results_dir = '/Users/davidemiani/OneDrive - Alma Mater Studiorum ' \
-              'Università di Bologna/TesiMagistrale_DavideMiani/' \
-              'results/hgdecode'
-learning_type = 'dl'  # dl or ml
-if learning_type == 'ml':
-    algo_or_model_name = 'FBCSP_rLDA'
-else:
-    algo_or_model_name = 'DeepConvNet'
-datetime = '2019-01-27_15-07-56'
+"""
+SET HERE YOUR PARAMETERS
+"""
+# to find file parameters
+results_dir = None
+learning_type = 'ml'
+algorithm_or_model_name = None
+epoching = '-500_4000'
+fold_type = 'single_subject'
+n_folds = 2
+deprecated = False
+
+# metrics parameter
 label = 'Feet'  # Feet, LeftHand, Rest or RightHand
 metric_type = 'overall'  # label or overall
 metric = 'acc'
-epoch_ival_ms = '-500,4000'  # str type
-file_path = os.path.join(results_dir,
-                         learning_type,
-                         algo_or_model_name,
-                         datetime,
-                         'statistics',
-                         'tables')
+
+"""
+GETTING PATHS
+"""
+# getting folder path
+folder_path = get_path(
+    results_dir=results_dir,
+    learning_type=learning_type,
+    algorithm_or_model_name=algorithm_or_model_name,
+    epoching=epoching,
+    fold_type=fold_type,
+    n_folds=n_folds,
+    deprecated=deprecated
+)
+
+# getting file_path
+file_path = os.path.join(folder_path, 'statistics', 'tables')
 if metric_type == 'overall':
     file_path = os.path.join(file_path, metric + '.csv')
 else:
     file_path = os.path.join(file_path, label, metric + '.csv')
 
+"""
+COMPUTATION START HERE
+"""
 with open(file_path) as f:
     csv = list(reader(f))
 
@@ -61,7 +79,8 @@ total_s /= len(csv)
 total_m = check_significant_digits(total_m)
 total_s = check_significant_digits(total_s)
 
-caption = learning_type + ' ' + metric + ' ' + epoch_ival_ms
+caption = learning_type + ' ' + metric + ' ' + \
+          epoching.replace('_', ',') + ' ' + str(n_folds) + ' fold'
 output += '\\hline\n\\multicolumn{' + str(n_folds + 1) + '}' + \
           '{|r|}{\\textbf{media totale}}\n&' + total_m + '\n&' + \
           total_s + '\n\\\\\n\\hline\n\\end{tabular}\n' + \
