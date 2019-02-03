@@ -16,9 +16,11 @@ from numpy import repeat
 from numpy import append
 from numpy import random
 from numpy import newaxis
+from numpy import argwhere
 from numpy import linspace
 from numpy import setdiff1d
 from numpy import concatenate
+from numpy.random import shuffle
 from numpy.random import RandomState
 from pickle import dump
 from pickle import load
@@ -864,8 +866,42 @@ class CrossValidation(object):
                 current_fold['train'][:-self.validation_size]
 
     def balance_train_set(self, train_size):
+        # getting number of classes
+        n_classes = self.n_classes
+
+        # cycling on folds
         for fold in self.folds:
-            y = y[fold['train']]
+            # getting information for this fold
+            y = self.y[fold['train']]
+            n_samples_per_class = int(round(train_size / n_classes))
+
+            # pre-allocating arrays
+            to_keep_idxs = array([], dtype=int)
+            to_move_idxs = array([], dtype=int)
+
+            # cycling on classes
+            for current_class in range(n_classes):
+                # getting current class indexes in y
+                class_idxs = argwhere(y == current_class).flatten()
+
+                # balancing for this class
+                to_keep_idxs = concatenate(
+                    (to_keep_idxs,
+                     fold['train'][class_idxs[:n_samples_per_class]])
+                )
+
+                to_move_idxs = concatenate(
+                    (to_move_idxs,
+                     fold['train'][class_idxs[n_samples_per_class:]])
+                )
+
+            # modify current fold
+            fold['train'] = to_keep_idxs
+            fold['test'] = concatenate((fold['test'], to_move_idxs))
+
+            # shuffling
+            shuffle(fold['train'])
+            shuffle(fold['test'])
 
     def __len__(self):
         return len(self.y)
@@ -922,7 +958,7 @@ class CrossValidation(object):
                         batch_lab.tolist().count(class_idx)
                     )
                 )
-            print('-' * 18)
+            print('-' * 19)
             print('Total  : {} trials\n'.format(len(fold[batch_str])))
 
     def create_dataset(self, fold):

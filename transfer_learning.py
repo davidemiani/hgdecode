@@ -88,7 +88,7 @@ COMPUTATION
 """
 for subject_id in subject_ids:
     # creating a log object
-    create_log(
+    subj_results_dir = create_log(
         results_dir=results_dir,
         learning_type='dl',
         algorithm_or_model_name=model_name,
@@ -119,7 +119,7 @@ for subject_id in subject_ids:
     else:
         batch_size = 32
 
-    # I don't think this is a good idea
+    # I don't think this is a good idea:
     # validation_size is equal to fold_size
     # validation_size = fold_size
 
@@ -133,6 +133,7 @@ for subject_id in subject_ids:
         random_state=random_state, shuffle=True,
         swap_train_test=True,
     )
+    cross_validation.balance_train_set(train_size=fold_size)
 
     # pre-allocating experiment
     exp = None
@@ -156,6 +157,7 @@ for subject_id in subject_ids:
             dataset=dataset,
             model_name=model_name,
             results_dir=results_dir,
+            subj_results_dir=subj_results_dir,
             name_to_start_codes=name_to_start_codes,
             random_state=random_state,
             fold_idx=fold_idx,
