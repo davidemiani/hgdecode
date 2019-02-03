@@ -863,6 +863,10 @@ class CrossValidation(object):
             self.folds[idx]['train'] = \
                 current_fold['train'][:-self.validation_size]
 
+    def balance_train_set(self, train_size):
+        for fold in self.folds:
+            y = y[fold['train']]
+
     def __len__(self):
         return len(self.y)
 

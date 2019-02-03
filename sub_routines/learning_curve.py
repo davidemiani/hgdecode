@@ -14,7 +14,7 @@ SET HERE YOUR PARAMETERS
 """
 # to find file parameters
 results_dir = None
-learning_type = 'ml'
+learning_type = 'dl'
 algorithm_or_model_name = None
 epoching = '-500_4000'
 fold_type = 'single_subject'

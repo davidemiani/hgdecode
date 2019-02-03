@@ -63,12 +63,15 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 # setting random state
 random_state = RandomState(1234)
 
-# fold stuff
-n_folds = 12
-fold_dir = join(data_dir, 'stratified_fold', my_formatter(n_folds, 'fold'))
-
 # interval
 ival = (-1000, 1000)
+ival_str = str(ival[0]) + '_' + str(ival[1])
+
+# fold stuff
+n_folds = 12
+fold_dir = join(data_dir,
+                'stratified_fold_' + ival_str,
+                my_formatter(n_folds, 'fold'))
 
 """
 MAIN CYCLE
