@@ -43,21 +43,22 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (2,)  # 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random_state
 random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 128  # must be integer
+fold_size = 16  # must be integer
+validation_frac = 0.1
 
 # setting frozen_layers
-frozen_layers = 10
+layers_to_freeze = -15
 
 # other hyper-parameters
-dropout_rate = 0.5
-learning_rate = 4 * 1e-5
+dropout_rate = 0.6
+learning_rate = 2 * 1e-5
 epochs = 1000
 
 """
@@ -114,19 +115,21 @@ for subject_id in subject_ids:
 
     # computing batch_size to be...
     if fold_size <= 64:
-        batch_size = int(fold_size / 2)
+        batch_size = fold_size
     else:
         batch_size = 32
 
+    # I don't think this is a good idea
     # validation_size is equal to fold_size
-    validation_size = fold_size
+    # validation_size = fold_size
 
     # creating CrossValidation class instance
     cross_validation = CrossValidation(
         X=epo.X,
         y=epo.y,
         fold_size=fold_size,
-        validation_size=validation_size,
+        # validation_size=validation_size,
+        validation_frac=validation_frac,
         random_state=random_state, shuffle=True,
         swap_train_test=True,
     )
@@ -186,8 +189,7 @@ for subject_id in subject_ids:
                                     ))
 
         # freezing layers
-        for layer in exp.model.layers[:frozen_layers]:
-            layer.trainable = False
+        exp.freeze_layers(layers_to_freeze=layers_to_freeze)
 
         # training
         exp.train()

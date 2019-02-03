@@ -5,6 +5,7 @@ from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
 from os.path import join
+from os.path import dirname
 from itertools import combinations
 from hgdecode.utils import touch_dir
 from hgdecode.utils import my_formatter
@@ -286,6 +287,7 @@ class DLExperiment(object):
                  dataset,
                  model_name,
                  results_dir,
+                 subj_results_dir,
                  name_to_start_codes,
                  random_state,
                  fold_idx,
@@ -314,6 +316,8 @@ class DLExperiment(object):
         self.dataset = dataset
         self.model_name = model_name
         self.results_dir = results_dir
+        self.subj_results_dir = subj_results_dir
+        self.datetime_results_dir = dirname(subj_results_dir)
         self.name_to_start_codes = name_to_start_codes
         self.random_state = random_state
         self.fold_idx = fold_idx
@@ -346,8 +350,6 @@ class DLExperiment(object):
         # managing paths
         self.dl_results_dir = None
         self.model_results_dir = None
-        self.datetime_results_dir = None
-        self.subj_results_dir = None
         self.fold_results_dir = None
         self.statistics_dir = None
         self.figures_dir = None
@@ -428,40 +430,27 @@ class DLExperiment(object):
         # model_results_dir is: .../results/hgdecode/dl/model_name
         model_results_dir = join(dl_results_dir, self.model_name)
 
-        # datetime_results_dir is: .../results/hgdecode/dl/model_name/datetime
-        dirs_in_folder = listdir(model_results_dir)
-        dirs_in_folder.sort()
-        datetime_results_dir = join(model_results_dir, dirs_in_folder[-1])
-
-        # subj_results_dir is: .../results/hgdecode/dl/model/datetime/subject
-        subj_str = str(self.subject_id)
-        if len(subj_str) == 1:
-            subj_str = '0' + subj_str
-        subj_str = 'subj' + subj_str
-        subj_results_dir = join(datetime_results_dir, subj_str)
-
         # fold_results_dir is .../results/dataset/dl/model/datetime/subj/fold
         fold_str = str(self.fold_idx + 1)
         if len(fold_str) == 1:
             fold_str = '0' + fold_str
         fold_str = 'fold' + fold_str
-        fold_results_dir = join(subj_results_dir, fold_str)
+        fold_results_dir = join(self.subj_results_dir, fold_str)
 
         # setting on object self
         self.dl_results_dir = dl_results_dir
         self.model_results_dir = model_results_dir
-        self.datetime_results_dir = datetime_results_dir
-        self.subj_results_dir = subj_results_dir
         self.fold_results_dir = fold_results_dir
 
         # touching only the last directory will be create also the other ones
         touch_dir(self.fold_results_dir)
 
         # statistics_dir is: .../results/hgdecode/dl/model/datetime/statistics
-        statistics_dir = join(datetime_results_dir, 'statistics')
+        statistics_dir = join(self.datetime_results_dir, 'statistics')
 
         # figures_dir is: .../results/hgdecode/dl/model/dt/stat/figures/subject
-        figures_dir = join(statistics_dir, 'figures', subj_str)
+        figures_dir = join(statistics_dir, 'figures',
+                           my_formatter(self.subject_id, 'subj'))
 
         # tables_dir is: .../results/hgdecode/dl/model/datetime/stat/tables
         tables_dir = join(statistics_dir, 'tables')
@@ -631,3 +620,32 @@ class DLExperiment(object):
         # computing confusion matrix
         conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
         print("Confusion matrix:\n", conf_mtx)
+
+    def freeze_layers(self, layers_to_freeze):
+        print_manager('FREEZING LAYERS', 'double-dashed')
+        if layers_to_freeze is 0:
+            print('NOTHING TO FREEZE!!')
+        else:
+            print("I'm gonna gonna freeze {} layers.".format(layers_to_freeze))
+            # freezing layers
+            if layers_to_freeze > 0:
+                for layer in self.model.layers[:layers_to_freeze]:
+                    layer.trainable = False
+            else:
+                for layer in self.model.layers[layers_to_freeze:]:
+                    layer.trainable = False
+
+            # creating optimizer instance
+            if self.optimizer is 'Adam':
+                opt = optimizers.Adam(lr=self.learning_rate)
+            else:
+                opt = optimizers.Adam(lr=self.learning_rate)
+
+            # compiling model
+            self.model.compile(loss=self.loss,
+                               optimizer=opt,
+                               metrics=['accuracy'])
+
+            # printing model information
+            self.model.summary()
+        print_manager('DONE!!', print_style='last', bottom_return=1)

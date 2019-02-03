@@ -13,9 +13,9 @@ from hgdecode.experiments import FBCSPrLDAExperiment
 """
 SETTING PARAMETERS
 ------------------
-In the following, you have to set / modify all the parameters to use for 
+In the following, you have to set / modify all the parameters to use for
 further computation.
-    
+
 Parameters
 ----------
 algorithm_name : str
@@ -27,7 +27,7 @@ data_dir : str
 name_to_start_codes : OrderedDict
     All possible classes names and codes in an ordered dict format
 results_dir : str
-    
+
 subject_ids : tuple
     All the subject ids in a tuple; add or remove subjects to run the
     algorithm for them or not
@@ -64,18 +64,18 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 random_state = RandomState(1234)
 
 # fold stuff
-n_folds = 6
+n_folds = 12
 fold_dir = join(data_dir, 'stratified_fold', my_formatter(n_folds, 'fold'))
 
 # interval
-ival = (-500, 4000)
+ival = (-1000, 1000)
 
 """
 MAIN CYCLE
 ----------
-For each subject, a new log will be created and the specific dataset loaded; 
-this dataset will be used to create an instance of the experiment; then the 
-experiment will be run. You can of course change all the experiment inputs 
+For each subject, a new log will be created and the specific dataset loaded;
+this dataset will be used to create an instance of the experiment; then the
+experiment will be run. You can of course change all the experiment inputs
 to obtain different results.
 """
 for subject_id in subject_ids:

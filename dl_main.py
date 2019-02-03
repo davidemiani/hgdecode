@@ -74,7 +74,7 @@ to obtain different results.
 """
 for subject_id in subject_ids:
     # creating a log object
-    create_log(
+    subj_results_dir = create_log(
         results_dir=results_dir,
         learning_type='dl',
         algorithm_or_model_name=model_name,
@@ -89,8 +89,8 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-500, 4000),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
@@ -99,7 +99,7 @@ for subject_id in subject_ids:
     cv = CrossValidation(
         X=epo.X,
         y=epo.y,
-        n_folds=8,
+        n_folds=12,
         validation_frac=0.1,
         random_state=random_state,
         shuffle=True
@@ -127,6 +127,7 @@ for subject_id in subject_ids:
             dataset=dataset,
             model_name=model_name,
             results_dir=results_dir,
+            subj_results_dir=subj_results_dir,
             name_to_start_codes=name_to_start_codes,
             random_state=random_state,
             fold_idx=fold_idx,
@@ -134,8 +135,8 @@ for subject_id in subject_ids:
             # hyperparameters
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=1 * 1e-4,  # Schirrmeister: ?
-            batch_size=32,  # Schirrmeister: 512
-            epochs=1,  # Schirrmeister: ?
+            batch_size=64,  # Schirrmeister: 512
+            epochs=1000,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
@@ -157,5 +158,5 @@ for subject_id in subject_ids:
 
     if exp is not None:
         # computing cross-validation
-        cv.cross_validate(subj_results_dir=exp.subj_results_dir,
+        cv.cross_validate(subj_results_dir=subj_results_dir,
                           label_names=name_to_start_codes)
