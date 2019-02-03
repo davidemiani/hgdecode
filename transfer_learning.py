@@ -4,8 +4,10 @@ from os.path import join
 from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
+from hgdecode.utils import get_path
 from hgdecode.utils import create_log
 from hgdecode.utils import get_fold_str
+from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
@@ -46,12 +48,38 @@ subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 # setting random_state
 random_state = RandomState(1234)
 
-# setting cross_subj_dir_name: data from cross-subj computation are stored here
-cross_subj_dir_name = '2019-01-18_13-33-01'
-
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 4  # must be integer
+fold_size = 128  # must be integer
+
+# setting frozen_layers
+frozen_layers = 10
+
+# other hyper-parameters
+dropout_rate = 0.5
+learning_rate = 4 * 1e-5
+epochs = 1000
+
+"""
+GETTING CROSS-SUBJECT MODELS DIR PATH
+-------------------------------------
+"""
+# setting cross_subj_dir_path: data from cross-subj computation are stored here
+learning_type = 'dl'
+algorithm_or_model_name = None
+epoching = '-500_4000'
+fold_type = 'cross_subject'
+n_folds = None
+deprecated = False
+cross_subj_dir_path = get_path(
+    results_dir=dirname(results_dir),
+    learning_type=learning_type,
+    algorithm_or_model_name=algorithm_or_model_name,
+    epoching=epoching,
+    fold_type=fold_type,
+    n_folds=n_folds,
+    deprecated=deprecated
+)
 
 """
 COMPUTATION
@@ -108,6 +136,14 @@ for subject_id in subject_ids:
 
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
+        # printing fold information
+        print_manager(
+            'SUBJECT {}, FOLD {}'.format(subject_id, fold_idx + 1),
+            print_style='double-dashed'
+        )
+        cross_validation.print_fold_classes(fold_idx)
+        print_manager(print_style='last', bottom_return=1)
+
         # creating EEGDataset for current fold
         dataset = cross_validation.create_dataset(fold=current_fold)
 
@@ -122,10 +158,10 @@ for subject_id in subject_ids:
             fold_idx=fold_idx,
 
             # hyperparameters
-            dropout_rate=0.5,  # Schirrmeister: 0.5
-            learning_rate=5 * 1e-6,  # Schirrmeister: ?
+            dropout_rate=dropout_rate,  # Schirrmeister: 0.5
+            learning_rate=learning_rate,  # Schirrmeister: ?
             batch_size=batch_size,  # Schirrmeister: 512
-            epochs=2,  # Schirrmeister: ?
+            epochs=epochs,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?
@@ -143,14 +179,15 @@ for subject_id in subject_ids:
         )
 
         # loading model weights from cross-subject pre-trained model
-        exp.model.load_weights(join(results_dir,
-                                    'dl',
-                                    model_name,
-                                    cross_subj_dir_name,
+        exp.model.load_weights(join(cross_subj_dir_path,
                                     'subj_cross',
                                     get_fold_str(subject_id),
                                     'net_best_val_loss.h5'
                                     ))
+
+        # freezing layers
+        for layer in exp.model.layers[:frozen_layers]:
+            layer.trainable = False
 
         # training
         exp.train()

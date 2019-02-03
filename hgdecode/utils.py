@@ -416,7 +416,9 @@ def get_path(results_dir=None,
                        'hgdecode',
                        learning_type,
                        algorithm_or_model_name,
-                       folder,
-                       my_formatter(n_folds, 'fold'))
+                       folder)
+
+    if (fold_type == 'single_subject') and (epoching_str == '-500_4000'):
+        folder_path = join(folder_path, my_formatter(n_folds, 'fold'))
 
     return join(folder_path, listdir(folder_path)[0])
