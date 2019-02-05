@@ -92,6 +92,14 @@ def touch_file(file_path):
         return False
 
 
+def listdir2(path):
+    l = listdir(path)
+    for c_dir in l:
+        if c_dir == '.DS_Store':
+            l.remove('.DS_Store')
+    return l
+
+
 def create_log(results_dir,
                learning_type='ml',
                algorithm_or_model_name='FBCSP_rLDA',
@@ -396,13 +404,15 @@ def get_path(results_dir=None,
             folder += '3'
         elif epoching_str == '-1500_500':
             folder += '4'
+        elif epoching_str == '-2000_0':
+            folder += '5'
     elif fold_type == 'cross_subject':
         if epoching_str == '-500_4000':
-            folder += '5'
-        elif epoching_str == '-1000_1000':
             folder += '6'
+        elif epoching_str == '-1000_1000':
+            folder += '7'
     elif fold_type == 'transfer_learning':
-        folder += '7'
+        folder += '8'
     else:
         raise ValueError(
             'Invalid fold_type: {}'.format(fold_type)
@@ -421,4 +431,4 @@ def get_path(results_dir=None,
     if (fold_type == 'single_subject') and (epoching_str == '-500_4000'):
         folder_path = join(folder_path, my_formatter(n_folds, 'fold'))
 
-    return join(folder_path, listdir(folder_path)[0])
+    return join(folder_path, listdir2(folder_path)[0])

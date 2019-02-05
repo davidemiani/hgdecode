@@ -8,11 +8,11 @@ from hgdecode.utils import get_path
 TRAINING 1
 """
 results_dir = None
-learning_type = 'dl'
+learning_type = 'ml'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = '-1500_500'
 fold_type = 'single_subject'
-n_folds_list = [8]  # must be a list of integer
+n_folds_list = [12]  # must be a list of integer
 deprecated = False
 folder_paths_1 = [
     get_path(
@@ -33,7 +33,7 @@ TRAINING 2
 results_dir = None
 learning_type = 'dl'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = '-1500_500'
 fold_type = 'single_subject'
 n_folds_list = [12]  # must be a list of integer
 deprecated = False

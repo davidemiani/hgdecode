@@ -10,7 +10,7 @@ SET HERE YOUR PARAMETERS
 results_dir = None
 learning_type = 'dl'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = '-1500_500'
 fold_type = 'single_subject'
 n_folds = 12
 deprecated = False
