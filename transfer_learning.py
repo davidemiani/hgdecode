@@ -51,7 +51,7 @@ random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 128  # must be integer
+fold_size = 8  # must be integer
 validation_frac = 0.1
 
 # setting frozen_layers
@@ -60,7 +60,7 @@ layers_to_freeze = 0
 # other hyper-parameters
 dropout_rate = 0.6
 learning_rate = 2 * 1e-5
-epochs = 500
+epochs = 100
 
 """
 GETTING CROSS-SUBJECT MODELS DIR PATH
@@ -118,7 +118,7 @@ for subject_id in subject_ids:
     if fold_size <= 64:
         batch_size = fold_size
     else:
-        batch_size = 32
+        batch_size = 64
 
     # I don't think this is a good idea:
     # validation_size is equal to fold_size
@@ -190,11 +190,11 @@ for subject_id in subject_ids:
         )
 
         # loading model weights from cross-subject pre-trained model
-        exp.model.load_weights(join(cross_subj_dir_path,
-                                    'subj_cross',
-                                    get_fold_str(subject_id),
-                                    'net_best_val_loss.h5'
-                                    ))
+        exp.prepare_for_transfer_learning(
+            cross_subj_dir_path=cross_subj_dir_path,
+            subject_id=subject_id,
+            train_anyway=True
+        )
 
         # freezing layers
         exp.freeze_layers(layers_to_freeze=layers_to_freeze)

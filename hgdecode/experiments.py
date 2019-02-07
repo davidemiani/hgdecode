@@ -1,9 +1,9 @@
 # General modules
-from os import listdir
 from numpy import load
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
+from pickle import load
 from os.path import join
 from os.path import dirname
 from itertools import combinations
@@ -346,6 +346,7 @@ class DLExperiment(object):
         self.data_generator = data_generator
         self.workers = workers
         self.save_model_at_each_epoch = save_model_at_each_epoch
+        self.metrics_tracker = None
 
         # managing paths
         self.dl_results_dir = None
@@ -566,16 +567,19 @@ class DLExperiment(object):
 
             # TODO: MetricsTracker for Data Generation routine
             # creating a MetricsTracker instance
-            callbacks.append(
-                MetricsTracker(
-                    dataset=self.dataset,
-                    epochs=self.epochs,
-                    n_classes=self.n_classes,
-                    batch_size=self.batch_size,
-                    h5_model_path=self.h5_model_path,
-                    fold_stats_path=self.fold_stats_path
+            if self.metrics_tracker is None:
+                callbacks.append(
+                    MetricsTracker(
+                        dataset=self.dataset,
+                        epochs=self.epochs,
+                        n_classes=self.n_classes,
+                        batch_size=self.batch_size,
+                        h5_model_path=self.h5_model_path,
+                        fold_stats_path=self.fold_stats_path
+                    )
                 )
-            )
+            else:
+                callbacks.append(self.metrics_tracker)
 
             # training!
             print_manager(
@@ -620,6 +624,49 @@ class DLExperiment(object):
         # computing confusion matrix
         conf_mtx = confusion_matrix(y_true=y_test, y_pred=y_pred)
         print("Confusion matrix:\n", conf_mtx)
+
+    def prepare_for_transfer_learning(self,
+                                      cross_subj_dir_path,
+                                      subject_id,
+                                      train_anyway=False):
+        # printing the start
+        print_manager('PREPARING FOR TRANSFER LEARNING', 'double-dashed')
+
+        # getting this subject cross-subject dir
+        cross_subj_this_subj_dir_path = join(cross_subj_dir_path,
+                                             'subj_cross',
+                                             my_formatter(subject_id, 'fold'))
+
+        # loading
+        self.model.load_weights(join(cross_subj_this_subj_dir_path,
+                                     'net_best_val_loss.h5'))
+
+        if train_anyway is False:
+            # pre-saving this net as best one
+            self.model.save(self.h5_model_path)
+
+            # creating metrics tracker instance
+            self.metrics_tracker = MetricsTracker(
+                dataset=self.dataset,
+                epochs=self.epochs,
+                n_classes=self.n_classes,
+                batch_size=self.batch_size,
+                h5_model_path=self.h5_model_path,
+                fold_stats_path=self.fold_stats_path
+            )
+
+            # loading cross-subject info
+            with open(join(cross_subj_this_subj_dir_path,
+                           'fold_stats.pickle'), 'rb') as f:
+                results = load(f)
+
+            # forcing best net to be the 0 one
+            self.metrics_tracker.best['loss'] = results['test']['loss']
+            self.metrics_tracker.best['acc'] = results['test']['acc']
+            self.metrics_tracker.best['idx'] = 0
+
+        # printing the end
+        print_manager('DONE!!', print_style='last', bottom_return=1)
 
     def freeze_layers(self, layers_to_freeze):
         print_manager('FREEZING LAYERS', 'double-dashed')
