@@ -11,6 +11,7 @@ from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
+from keras import backend as K
 
 """
 SETTING PARAMETERS
@@ -43,23 +44,23 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Feet', [4])])
 
 # setting subject_ids
-subject_ids = (2,)  # 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 
 # setting random_state
 random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 16  # must be integer
+fold_size = 128  # must be integer
 validation_frac = 0.1
 
 # setting frozen_layers
-layers_to_freeze = -15
+layers_to_freeze = 0
 
 # other hyper-parameters
 dropout_rate = 0.6
 learning_rate = 2 * 1e-5
-epochs = 1000
+epochs = 500
 
 """
 GETTING CROSS-SUBJECT MODELS DIR PATH
@@ -140,6 +141,11 @@ for subject_id in subject_ids:
 
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cross_validation.folds):
+        # clearing TF graph (https://github.com/keras-team/keras/issues/3579)
+        print_manager('CLEARING KERAS BACKEND', print_style='double-dashed')
+        K.clear_session()
+        print_manager(print_style='last', bottom_return=1)
+
         # printing fold information
         print_manager(
             'SUBJECT {}, FOLD {}'.format(subject_id, fold_idx + 1),

@@ -7,8 +7,8 @@ from hgdecode.utils import create_log
 from hgdecode.loaders import CrossSubject
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
+from keras import backend as K
 
-# %%
 """
 SETTING PARAMETERS
 Here you can set whatever parameter you want
@@ -75,6 +75,12 @@ exp = None
 
 # cycling on subject leaved apart
 for leave_subj in subject_ids:
+    # clearing TF graph (https://github.com/keras-team/keras/issues/3579)
+    print_manager('CLEARING KERAS BACKEND', print_style='double-dashed')
+    K.clear_session()
+    print_manager(print_style='last', bottom_return=1)
+
+    # creating dataset for this "all but" fold
     cross_obj.parser(output_format='EEGDataset',
                      leave_subj=leave_subj,
                      parsing_type=1)

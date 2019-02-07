@@ -9,7 +9,6 @@ from hgdecode.loaders import CrossSubject
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import FBCSPrLDAExperiment
 
-# %%
 """
 SETTING PARAMETERS
 Here you can set whatever parameter you want
@@ -71,8 +70,8 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          clean_on_all_channels=False)
 
 """
-Si potrebbe fare un soft parsing così trova le fold, poi si passa ad exp 
-quello che gli serve (cnt all, clean all, fold all) e si butta tutto il 
+Si potrebbe fare un soft parsing così trova le fold, poi si passa ad exp
+quello che gli serve (cnt all, clean all, fold all) e si butta tutto il
 resto...
 """
 

@@ -8,6 +8,7 @@ from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
+from keras import backend as K
 
 """
 SETTING PARAMETERS
@@ -110,6 +111,11 @@ for subject_id in subject_ids:
 
     # cycling on folds for cross validation
     for fold_idx, current_fold in enumerate(cv.folds):
+        # clearing TF graph (https://github.com/keras-team/keras/issues/3579)
+        print_manager('CLEARING KERAS BACKEND', print_style='double-dashed')
+        K.clear_session()
+        print_manager(print_style='last', bottom_return=1)
+
         # printing fold information
         print_manager(
             'SUBJECT {}, FOLD {}'.format(subject_id, fold_idx + 1),
