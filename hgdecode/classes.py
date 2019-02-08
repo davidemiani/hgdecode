@@ -869,8 +869,11 @@ class CrossValidation(object):
         # getting number of classes
         n_classes = self.n_classes
 
+        # pre-allocating black list for fold we have to remove
+        black_list = []
+
         # cycling on folds
-        for fold in self.folds:
+        for fold_idx, fold in enumerate(self.folds):
             # getting information for this fold
             y = self.y[fold['train']]
             n_samples_per_class = int(round(train_size / n_classes))
@@ -879,10 +882,17 @@ class CrossValidation(object):
             to_keep_idxs = array([], dtype=int)
             to_move_idxs = array([], dtype=int)
 
+            # flagging for empty fold
+            flag = True
+
             # cycling on classes
             for current_class in range(n_classes):
                 # getting current class indexes in y
                 class_idxs = argwhere(y == current_class).flatten()
+
+                # if empty, then this fold cannot be used
+                if len(class_idxs) == 0:
+                    black_list.append(fold_idx)
 
                 # balancing for this class
                 to_keep_idxs = concatenate(
@@ -902,6 +912,11 @@ class CrossValidation(object):
             # shuffling
             shuffle(fold['train'])
             shuffle(fold['test'])
+
+        # deleting folds in the black list
+        for fold_idx in black_list:
+            del self.folds[fold_idx]
+            self.n_folds -= 1
 
     def __len__(self):
         return len(self.y)

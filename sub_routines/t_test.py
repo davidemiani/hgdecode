@@ -8,7 +8,7 @@ from hgdecode.utils import get_path
 TRAINING 1
 """
 results_dir = None
-learning_type = 'ml'
+learning_type = 'dl'
 algorithm_or_model_name = None
 epoching = '-1500_500'
 fold_type = 'single_subject'
