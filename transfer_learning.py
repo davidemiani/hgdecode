@@ -51,7 +51,7 @@ random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 8  # must be integer
+fold_size = 4  # must be integer
 validation_frac = 0.1
 
 # setting frozen_layers
