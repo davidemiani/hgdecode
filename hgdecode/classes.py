@@ -882,9 +882,6 @@ class CrossValidation(object):
             to_keep_idxs = array([], dtype=int)
             to_move_idxs = array([], dtype=int)
 
-            # flagging for empty fold
-            flag = True
-
             # cycling on classes
             for current_class in range(n_classes):
                 # getting current class indexes in y
@@ -914,9 +911,11 @@ class CrossValidation(object):
             shuffle(fold['test'])
 
         # deleting folds in the black list
+        black_list = array(black_list)
         for fold_idx in black_list:
             del self.folds[fold_idx]
             self.n_folds -= 1
+            black_list -= 1
 
     def __len__(self):
         return len(self.y)
