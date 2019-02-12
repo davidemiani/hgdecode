@@ -93,7 +93,8 @@ for subject_id in subject_ids:
         clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
         epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
-        clean_on_all_channels=False  # Schirrmeister: True
+        clean_on_all_channels=False,  # Schirrmeister: True
+        standardize_mode=1
     )
 
     # creating CrossValidation class instance

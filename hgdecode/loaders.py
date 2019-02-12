@@ -3,10 +3,10 @@ from copy import deepcopy
 from numpy import max
 from numpy import abs
 from numpy import sum
+from numpy import std
 from numpy import mean
 from numpy import array
 from numpy import floor
-from numpy import delete
 from numpy import repeat
 from numpy import arange
 from numpy import setdiff1d
@@ -23,10 +23,13 @@ from braindecode.mne_ext.signalproc import mne_apply
 from braindecode.mne_ext.signalproc import resample_cnt
 from braindecode.mne_ext.signalproc import concatenate_raws_with_events
 from braindecode.datautil.signalproc import bandpass_cnt
+from braindecode.datautil.signalproc import exponential_running_standardize
 from braindecode.datautil.signal_target import SignalAndTarget
 from braindecode.datautil.trial_segment import \
     create_signal_target_from_raw_mne
 
+
+# TODO: re-implement all this functons as an unique class
 
 # %% GET_DATA_FILES_PATHS
 def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
@@ -98,23 +101,61 @@ def pick_right_channels(cnt, channel_names):
 
 
 # %% STANDARDIZE_CNT
-def standardize_cnt(cnt):
-    # normalize data
-    cnt = mne_apply(
-        lambda x: x - mean(x, axis=0, keepdims=True),
-        cnt
-    )
-
+def standardize_cnt(cnt, standardize_mode=0):
     # computing frequencies
     sampling_freq = cnt.info['sfreq']
     init_freq = 0.1
     stop_freq = sampling_freq / 2 - 0.1
+    filt_order = 3
+    axis = 0
+    filtfilt = False
 
-    # cut away DC and too high frequencies
+    # filtering DC and frequencies higher than the nyquist one
     cnt = mne_apply(
-        lambda x: bandpass_cnt(x, init_freq, stop_freq, sampling_freq),
+        lambda x:
+        bandpass_cnt(
+            data=x,
+            low_cut_hz=init_freq,
+            high_cut_hz=stop_freq,
+            fs=sampling_freq,
+            filt_order=filt_order,
+            axis=axis,
+            filtfilt=filtfilt
+        ),
         cnt
     )
+
+    # removing mean and normalizing in 3 different ways
+    if standardize_mode == 0:
+        # x - mean
+        cnt = mne_apply(
+            lambda x:
+            x - mean(x, axis=0, keepdims=True),
+            cnt
+        )
+    elif standardize_mode == 1:
+        # (x - mean) / std
+        cnt = mne_apply(
+            lambda x:
+            (x - mean(x, axis=0, keepdims=True)) /
+            std(x, axis=0, keepdims=True),
+            cnt
+        )
+    elif standardize_mode == 2:
+        # parsing to milli volt for numerical stability of next operations
+        cnt = mne_apply(lambda a: a * 1e6, cnt)
+
+        # applying exponential_running_standardize (Schirrmeister)
+        cnt = mne_apply(
+            lambda x:
+            exponential_running_standardize(
+                x.T,
+                factor_new=1e-3,
+                init_block_size=1000,
+                eps=1e-4
+            ).T,
+            cnt
+        )
     return cnt
 
 
@@ -126,7 +167,8 @@ def load_and_preprocess_data(data_dir,
                              resampling_freq=None,
                              clean_ival_ms=(0, 4000),
                              train_test_split=True,
-                             clean_on_all_channels=True):
+                             clean_on_all_channels=True,
+                             standardize_mode=0):
     # TODO: create here another get_data_files_paths function if you have a
     #  different file configuration; in every case, file_paths must be a
     #  list of paths to valid BBCI standard files
@@ -184,7 +226,8 @@ def load_and_preprocess_data(data_dir,
 
     # standardize continuous data
     log.info('Standardizing continuous data...')
-    cnt = standardize_cnt(cnt)
+    log.info('Standardize mode: {}'.format(standardize_mode))
+    cnt = standardize_cnt(cnt=cnt, standardize_mode=standardize_mode)
     print_manager('DONE!!', 'last', bottom_return=1)
 
     return cnt, clean_trial_mask
@@ -198,7 +241,8 @@ def ml_loader(data_dir,
               resampling_freq=None,
               clean_ival_ms=(0, 4000),
               train_test_split=True,
-              clean_on_all_channels=True):
+              clean_on_all_channels=True,
+              standardize_mode=0):
     outputs = load_and_preprocess_data(
         data_dir=data_dir,
         name_to_start_codes=name_to_start_codes,
@@ -207,7 +251,8 @@ def ml_loader(data_dir,
         resampling_freq=resampling_freq,
         clean_ival_ms=clean_ival_ms,
         train_test_split=train_test_split,
-        clean_on_all_channels=clean_on_all_channels
+        clean_on_all_channels=clean_on_all_channels,
+        standardize_mode=standardize_mode
     )
     return outputs[0], outputs[1]
 
@@ -221,7 +266,8 @@ def dl_loader(data_dir,
               clean_ival_ms=(0, 4000),
               epoch_ival_ms=(-500, 4000),
               train_test_split=True,
-              clean_on_all_channels=True):
+              clean_on_all_channels=True,
+              standardize_mode=0):
     # loading and pre-processing data
     cnt, clean_trial_mask = load_and_preprocess_data(
         data_dir=data_dir,
@@ -231,7 +277,8 @@ def dl_loader(data_dir,
         resampling_freq=resampling_freq,
         clean_ival_ms=clean_ival_ms,
         train_test_split=train_test_split,
-        clean_on_all_channels=clean_on_all_channels
+        clean_on_all_channels=clean_on_all_channels,
+        standardize_mode=standardize_mode
     )
     print_manager('EPOCHING AND CLEANING WITH MASK', 'double-dashed')
 

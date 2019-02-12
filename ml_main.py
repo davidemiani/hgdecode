@@ -100,7 +100,8 @@ for subject_id in subject_ids:
         resampling_freq=250,  # Schirrmeister: 250
         clean_ival_ms=ival,  # Schirrmeister: (0, 4000)
         train_test_split=True,  # Schirrmeister: True
-        clean_on_all_channels=False  # Schirrmeister: True
+        clean_on_all_channels=False,  # Schirrmeister: True
+        standardize_mode=1  # Schirrmeister: 2
     )
 
     # creating experiment instance
