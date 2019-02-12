@@ -1221,7 +1221,7 @@ class CrossValidation(object):
 
         # setting loss_acc plot properties
         if loss_acc == 'loss':
-            y_max = ceil(max(y_train_mean + y_train_std))
+            y_max = ceil(max(y_valid_mean + y_valid_std))
             y_label = 'loss'
         elif loss_acc == 'acc':
             y_max = 1

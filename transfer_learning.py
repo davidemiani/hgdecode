@@ -6,7 +6,6 @@ from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import get_path
 from hgdecode.utils import create_log
-from hgdecode.utils import get_fold_str
 from hgdecode.utils import print_manager
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
