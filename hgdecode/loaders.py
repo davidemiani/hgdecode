@@ -163,7 +163,7 @@ def load_and_preprocess_data(data_dir,
                              clean_ival_ms=(0, 4000),
                              train_test_split=True,
                              clean_on_all_channels=True,
-                             standardize_mode=0):
+                             standardize_mode=None):
     # TODO: create here another get_data_files_paths function if you have a
     #  different file configuration; in every case, file_paths must be a
     #  list of paths to valid BBCI standard files
@@ -220,10 +220,11 @@ def load_and_preprocess_data(data_dir,
         print_manager('DONE!!', bottom_return=1)
 
     # standardize continuous data
-    log.info('Standardizing continuous data...')
-    log.info('Standardize mode: {}'.format(standardize_mode))
-    cnt = standardize_cnt(cnt=cnt, standardize_mode=standardize_mode)
-    print_manager('DONE!!', 'last', bottom_return=1)
+    if standardize_mode is not None:
+        log.info('Standardizing continuous data...')
+        log.info('Standardize mode: {}'.format(standardize_mode))
+        cnt = standardize_cnt(cnt=cnt, standardize_mode=standardize_mode)
+        print_manager('DONE!!', 'last', bottom_return=1)
 
     return cnt, clean_trial_mask
 
@@ -236,7 +237,7 @@ def ml_loader(data_dir,
               clean_ival_ms=(0, 4000),
               train_test_split=True,
               clean_on_all_channels=True,
-              standardize_mode=0):
+              standardize_mode=None):
     outputs = load_and_preprocess_data(
         data_dir=data_dir,
         name_to_start_codes=name_to_start_codes,
@@ -260,7 +261,7 @@ def dl_loader(data_dir,
               epoch_ival_ms=(-500, 4000),
               train_test_split=True,
               clean_on_all_channels=True,
-              standardize_mode=0):
+              standardize_mode=None):
     # loading and pre-processing data
     cnt, clean_trial_mask = load_and_preprocess_data(
         data_dir=data_dir,
@@ -346,6 +347,9 @@ class CrossSubject(object):
         self.fold_subject_labels = None
 
         # loading the first subject (to pre-allocate cnt array)
+        # we are gonna pass standardize_mode=None, so the loading procedure
+        # will not standardize data. They will be standardized at the very
+        # end, when all data are loaded
         temp_cnt, temp_mask = load_and_preprocess_data(
             data_dir=self.data_dir,
             name_to_start_codes=self.name_to_start_codes,
@@ -354,7 +358,8 @@ class CrossSubject(object):
             resampling_freq=self.resampling_freq,
             clean_ival_ms=self.clean_ival_ms,
             train_test_split=self.train_test_split,
-            clean_on_all_channels=self.clean_on_all_channels
+            clean_on_all_channels=self.clean_on_all_channels,
+            standardize_mode=None
         )
 
         # allocate the first subject_labels
@@ -386,7 +391,8 @@ class CrossSubject(object):
                 resampling_freq=self.resampling_freq,
                 clean_ival_ms=self.clean_ival_ms,
                 train_test_split=self.train_test_split,
-                clean_on_all_channels=self.clean_on_all_channels
+                clean_on_all_channels=self.clean_on_all_channels,
+                standardize_mode=None
             )
 
             # create the subject_labels for this subject

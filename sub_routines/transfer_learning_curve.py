@@ -4,10 +4,16 @@ from pylab import savefig
 from pickle import load
 from os.path import join
 from os.path import dirname
+from hgdecode.utils import listdir2
 from hgdecode.utils import touch_dir
 from hgdecode.utils import get_subj_str
 from hgdecode.utils import get_fold_str
 from hgdecode.utils import get_path
+
+
+def get_fold_number(folder_path, subj_str):
+    return len(listdir2(join(folder_path, subj_str)))
+
 
 """
 SET HERE YOUR PARAMETERS
@@ -17,9 +23,9 @@ results_dir = None
 learning_type = 'dl'
 algorithm_or_model_name = None
 epoching = '-500_4000'
-fold_type = 'single_subject'
-n_folds_list = [2, 4, 6, 8, 10, 12]  # must be a list of integer
-deprecated = False
+fold_type = 'transfer_learning'
+train_size_list = [4, 8, 16, 32, 64, 128]  # must be a list of integer
+deprecated = True
 
 """
 GETTING PATHS
@@ -35,7 +41,7 @@ folder_paths = [
         n_folds=x,
         deprecated=deprecated
     )
-    for x in n_folds_list
+    for x in train_size_list
 ]
 n_trainings = len(folder_paths)
 
@@ -83,17 +89,13 @@ for subj, current_n_trials in zip(subj_str_list, n_trials_list):
     s_acc = []
 
     # cycling on all possible fold splits
-    for idx, current_n_folds in enumerate(n_folds_list):
-        n_folds.append(current_n_folds)
+    for idx, current_train_size in enumerate(train_size_list):
+        n_folds.append(get_fold_number(folder_paths[idx], subj))
         n_trials.append(current_n_trials)
-        if learning_type is 'dl':
-            n_valid_trials.append(int(np.floor(n_trials[idx] * 0.1)))
-        else:
-            n_valid_trials.append(0)
-        n_train_trials.append(
-            int(np.ceil(n_trials[idx] / n_folds[idx]) * (n_folds[idx] - 1)) -
-            n_valid_trials[idx])
-        n_test_trials.append(n_trials[idx] - n_train_trials[idx])
+        n_valid_trials.append(int(np.floor(n_trials[idx] * 0.1)))
+        n_train_trials.append(current_train_size)
+        n_test_trials.append(n_trials[idx] - n_train_trials[idx] -
+                             n_valid_trials[idx])
         perc_train_trials.append(
             np.round(n_train_trials[idx] / n_trials[idx] * 100, 1))
         perc_valid_trials.append(
@@ -129,21 +131,22 @@ for subj, current_n_trials in zip(subj_str_list, n_trials_list):
     s_acc = np.array(s_acc)
     plot_path = join(savings_dir, subj)
     if learning_type is 'dl':
-        title = '{} learning curve\n' + \
+        title = '{} transfer learning curve\n'.format(subj) + \
                 '({} samples, {} validation samples)'.format(
-                    subj, n_trials[0], n_valid_trials[0])
+                    n_trials[0], n_valid_trials[0])
     else:
-        title = '{} learning curve\n({} samples)'.format(subj, n_trials[0])
+        title = '{} transfer learning curve\n({} samples)'.format(subj,
+                                                                  n_trials[0])
     x_tick_labels = ['{}\n({} folds)'.format(trials, folds)
                      for trials, folds in zip(n_train_trials, n_folds)]
     plt.figure(dpi=100, figsize=(12.8, 7.2), facecolor='w', edgecolor='k')
     plt.style.use('seaborn-whitegrid')
-    plt.errorbar(x=n_folds, y=m_acc, yerr=s_acc,
+    plt.errorbar(x=[2, 4, 6, 8, 10, 12], y=m_acc, yerr=s_acc,
                  fmt='-.o', color='b', ecolor='r',
                  linewidth=2, elinewidth=3, capsize=20, capthick=2)
     plt.xlabel('training samples', fontsize=25)
     plt.ylabel('accuracy (%)', fontsize=25)
-    plt.xticks(n_folds, labels=x_tick_labels, fontsize=20)
+    plt.xticks([2, 4, 6, 8, 10, 12], labels=x_tick_labels, fontsize=20)
     plt.yticks(fontsize=20)
     plt.title(title, fontsize=25)
 
@@ -154,18 +157,20 @@ for subj, current_n_trials in zip(subj_str_list, n_trials_list):
 n_trials = np.array(results['n_trials'])
 n_train_trials = np.array(results['n_train_trials'])
 n_valid_trials = np.array(results['n_valid_trials'])
+n_folds = np.array(results['n_folds'])
 
 # averaging data
 m_n_trials = int(np.round(np.mean(n_trials, axis=0))[0].tolist())
 s_n_trials = int(np.round(np.std(n_trials, axis=0))[0].tolist())
-m_n_train_trials = np.round(np.mean(n_train_trials, axis=0)).tolist()
-s_n_train_trials = np.round(np.std(n_train_trials, axis=0)).tolist()
-m_n_train_trials = list(map(int, m_n_train_trials))
-s_n_train_trials = list(map(int, s_n_train_trials))
+m_n_train_trials = train_size_list
 m_n_valid_trials = np.round(np.mean(n_valid_trials, axis=0)).tolist()
 s_n_valid_trials = np.round(np.std(n_valid_trials, axis=0)).tolist()
 m_n_valid_trials = list(map(int, m_n_valid_trials))
 s_n_valid_trials = list(map(int, s_n_valid_trials))
+m_n_folds = np.round(np.mean(n_folds, axis=0)).tolist()
+s_n_folds = np.round(np.std(n_folds, axis=0)).tolist()
+m_n_folds = list(map(int, m_n_folds))
+s_n_folds = list(map(int, s_n_folds))
 m_acc = np.mean(np.array(results['m_acc']), axis=0)
 s_acc = np.mean(np.array(results['s_acc']), axis=0)
 
@@ -178,17 +183,17 @@ if learning_type is 'dl':
 else:
     title = '{} learning curve\n({}$\pm${} samples)'.format(
         'average', m_n_trials, s_n_trials)
-x_tick_labels = ['{}$\pm${}\n({} folds)'.format(
-    m_n_train_trials[idx], s_n_train_trials[idx], n_folds_list[idx])
+x_tick_labels = ['{}\n({}$\pm${} folds)'.format(
+    m_n_train_trials[idx], m_n_folds[idx], s_n_folds[idx])
     for idx in range(n_trainings)]
 plt.figure(dpi=100, figsize=(12.8, 7.2), facecolor='w', edgecolor='k')
 plt.style.use('seaborn-whitegrid')
-plt.errorbar(x=n_folds_list, y=m_acc, yerr=s_acc,
+plt.errorbar(x=[2, 4, 6, 8, 10, 12], y=m_acc, yerr=s_acc,
              fmt='-.o', color='b', ecolor='r',
              linewidth=2, elinewidth=3, capsize=20, capthick=2)
 plt.xlabel('training samples', fontsize=25)
 plt.ylabel('accuracy (%)', fontsize=25)
-plt.xticks(n_folds_list, labels=x_tick_labels, fontsize=20)
+plt.xticks([2, 4, 6, 8, 10, 12], labels=x_tick_labels, fontsize=20)
 plt.yticks(fontsize=20)
 plt.title(title, fontsize=25)
 

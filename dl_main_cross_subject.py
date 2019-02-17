@@ -4,6 +4,7 @@ from os.path import dirname
 from collections import OrderedDict
 from numpy.random import RandomState
 from hgdecode.utils import create_log
+from hgdecode.utils import print_manager
 from hgdecode.loaders import CrossSubject
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
@@ -42,14 +43,22 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 random_state = RandomState(1234)
 
 # setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+subject_ids = (1, 2)  # , 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+
+# setting hyperparameters
+ival = (-500, 4000)
+standardize_mode = 2
+learning_rate = 1 * 1e-4
+dropout_rate = 0.5
+batch_size = 32
+epochs = 800
 
 """
 STARTING LOADING ROUTINE & COMPUTATION
 Here you can change some parameter in function calls as well
 """
 # creating a log object
-create_log(
+subj_results_dir = create_log(
     results_dir=results_dir,
     learning_type='dl',
     algorithm_or_model_name=model_name,
@@ -66,9 +75,12 @@ cross_obj = CrossSubject(data_dir=data_dir,
                          validation_frac=0.1,
                          resampling_freq=250,
                          train_test_split=True,
-                         clean_ival_ms=(-500, 4000),
-                         epoch_ival_ms=(-500, 4000),
+                         clean_ival_ms=ival,
+                         epoch_ival_ms=ival,
                          clean_on_all_channels=False)
+
+# parsing all cnt data to epoched (we no more need cnt)
+cross_obj.parser(output_format='epo', parsing_type=1)
 
 # pre-allocating experiment
 exp = None
@@ -96,10 +108,10 @@ for leave_subj in subject_ids:
         fold_idx=leave_subj - 1,
 
         # hyperparameters
-        dropout_rate=0.5,  # Schirrmeister: 0.5
-        learning_rate=1 * 1e-4,  # Schirrmeister: ?
-        batch_size=32,  # Schirrmeister: 512
-        epochs=800,  # Schirrmeister: ?
+        dropout_rate=dropout_rate,  # Schirrmeister: 0.5
+        learning_rate=learning_rate,  # Schirrmeister: ?
+        batch_size=batch_size,  # Schirrmeister: 512
+        epochs=epochs,  # Schirrmeister: ?
         early_stopping=False,  # Schirrmeister: ?
         monitor='val_acc',  # Schirrmeister: ?
         min_delta=0.0001,  # Schirrmeister: ?
@@ -113,7 +125,8 @@ for leave_subj in subject_ids:
         # other parameters
         subject_id='_cross',
         data_generator=False,  # Schirrmeister: True
-        save_model_at_each_epoch=False
+        save_model_at_each_epoch=False,
+        subj_results_dir=subj_results_dir
     )
 
     # running training

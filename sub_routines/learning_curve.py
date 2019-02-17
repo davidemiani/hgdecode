@@ -14,7 +14,7 @@ SET HERE YOUR PARAMETERS
 """
 # to find file parameters
 results_dir = None
-learning_type = 'dl'
+learning_type = 'ml'
 algorithm_or_model_name = None
 epoching = '-500_4000'
 fold_type = 'single_subject'
@@ -93,7 +93,8 @@ for subj, current_n_trials in zip(subj_str_list, n_trials_list):
         n_train_trials.append(
             int(np.ceil(n_trials[idx] / n_folds[idx]) * (n_folds[idx] - 1)) -
             n_valid_trials[idx])
-        n_test_trials.append(n_trials[idx] - n_train_trials[idx])
+        n_test_trials.append(n_trials[idx] - n_train_trials[idx] -
+                             n_valid_trials[idx])
         perc_train_trials.append(
             np.round(n_train_trials[idx] / n_trials[idx] * 100, 1))
         perc_valid_trials.append(
@@ -129,9 +130,9 @@ for subj, current_n_trials in zip(subj_str_list, n_trials_list):
     s_acc = np.array(s_acc)
     plot_path = join(savings_dir, subj)
     if learning_type is 'dl':
-        title = '{} learning curve\n' + \
+        title = '{} learning curve\n'.format(subj) + \
                 '({} samples, {} validation samples)'.format(
-                    subj, n_trials[0], n_valid_trials[0])
+                    n_trials[0], n_valid_trials[0])
     else:
         title = '{} learning curve\n({} samples)'.format(subj, n_trials[0])
     x_tick_labels = ['{}\n({} folds)'.format(trials, folds)
