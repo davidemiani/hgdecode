@@ -29,9 +29,9 @@ from braindecode.datautil.trial_segment import \
     create_signal_target_from_raw_mne
 
 
-# TODO: re-implement all this functons as an unique class
+# TODO: re-implement all this functions as an unique class
 
-# %% GET_DATA_FILES_PATHS
+
 def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
     # compute file name (for both train and test path)
     file_name = '{:d}.mat'.format(subject_id)
@@ -48,7 +48,6 @@ def get_data_files_paths(data_dir, subject_id=1, train_test_split=True):
     return file_path
 
 
-# %% LOAD_CNT
 def load_cnt(file_path, channel_names, clean_on_all_channels=True):
     # if we have to run the cleaning procedure on all channels, putting
     # load_sensor_names to None will assure us the BBCIDataset class will
@@ -63,7 +62,6 @@ def load_cnt(file_path, channel_names, clean_on_all_channels=True):
     return loader.load()
 
 
-# %% GET_CLEAN_TRIAL_MASK
 def get_clean_trial_mask(cnt, name_to_start_codes, clean_ival_ms=(0, 4000)):
     """
     Scan trial in continuous data and create a mask with only the
@@ -94,13 +92,11 @@ def get_clean_trial_mask(cnt, name_to_start_codes, clean_ival_ms=(0, 4000)):
     return clean_trial_mask
 
 
-# %% PICK_RIGHT_CHANNELS
 def pick_right_channels(cnt, channel_names):
     # return the same cnt but with only right channels
     return cnt.pick_channels(channel_names)
 
 
-# %% STANDARDIZE_CNT
 def standardize_cnt(cnt, standardize_mode=0):
     # computing frequencies
     sampling_freq = cnt.info['sfreq']
@@ -159,7 +155,6 @@ def standardize_cnt(cnt, standardize_mode=0):
     return cnt
 
 
-# %% LOAD_AND_PREPROCESS_DATA
 def load_and_preprocess_data(data_dir,
                              name_to_start_codes,
                              channel_names,
@@ -233,7 +228,6 @@ def load_and_preprocess_data(data_dir,
     return cnt, clean_trial_mask
 
 
-# %% ML_LOADER
 def ml_loader(data_dir,
               name_to_start_codes,
               channel_names,
@@ -257,7 +251,6 @@ def ml_loader(data_dir,
     return outputs[0], outputs[1]
 
 
-# %% DL_LOADER
 def dl_loader(data_dir,
               name_to_start_codes,
               channel_names,
@@ -301,7 +294,6 @@ def dl_loader(data_dir,
     return epo
 
 
-# %% CROSS SUBJECT OBJECT
 class CrossSubject(object):
     """
     Nel momento in cui si crea una istanza di questa classe, essa caricherà
@@ -523,11 +515,6 @@ class CrossSubject(object):
         print_manager('DATA READY!!', 'last', bottom_return=1)
 
     def create_balanced_folds(self):
-        """
-        IDEONA!! Qui fai per ogni soggetto il suo train valid % invece che
-        su tutti. In questo modo sei sicuro non solo di avere esattamente lo
-        stesso numero di trial/soggetto in valid ma anche di trial/class!
-        """
         # pre-allocating folds
         self.folds = []
         for subj_idx, subj_idxs in enumerate(self.subject_indexes):

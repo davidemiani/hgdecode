@@ -57,18 +57,17 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Rest', [3]),
                                    ('Feet', [4])])
 
-# setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-
 # setting random state
 random_state = RandomState(1234)
 
-# interval
-ival = (-1000, 1000)
-ival_str = str(ival[0]) + '_' + str(ival[1])
+# real useful hyperparameters
+standardize_mode = 2
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+ival = (-500, 4000)
+n_folds = 24
 
 # fold stuff
-n_folds = 12
+ival_str = str(ival[0]) + '_' + str(ival[1])
 fold_dir = join(data_dir,
                 'stratified_fold_' + ival_str,
                 my_formatter(n_folds, 'fold'))
@@ -101,7 +100,7 @@ for subject_id in subject_ids:
         clean_ival_ms=ival,  # Schirrmeister: (0, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False,  # Schirrmeister: True
-        standardize_mode=1  # Schirrmeister: 2
+        standardize_mode=standardize_mode  # Schirrmeister: 2
     )
 
     # creating experiment instance

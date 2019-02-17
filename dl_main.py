@@ -59,11 +59,14 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
                                    ('Rest', [3]),
                                    ('Feet', [4])])
 
-# setting subject_ids
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-
 # setting random_state
 random_state = RandomState(1234)
+
+# real useful hyperparameters
+standardize_mode = 2
+subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+ival = (-500, 4000)
+n_folds = 10
 
 """
 MAIN CYCLE
@@ -90,18 +93,18 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-1000, 1000),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-1000, 1000),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=ival,  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=ival,  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False,  # Schirrmeister: True
-        standardize_mode=1
+        standardize_mode=standardize_mode  # Schirrmeister: 2
     )
 
     # creating CrossValidation class instance
     cv = CrossValidation(
         X=epo.X,
         y=epo.y,
-        n_folds=12,
+        n_folds=n_folds,
         validation_frac=0.1,
         random_state=random_state,
         shuffle=True
@@ -142,7 +145,7 @@ for subject_id in subject_ids:
             # hyperparameters
             dropout_rate=0.5,  # Schirrmeister: 0.5
             learning_rate=1 * 1e-4,  # Schirrmeister: ?
-            batch_size=64,  # Schirrmeister: 512
+            batch_size=32,  # Schirrmeister: 512
             epochs=1000,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?

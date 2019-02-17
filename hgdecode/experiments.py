@@ -1,5 +1,5 @@
 # General modules
-from numpy import load
+import numpy as np
 from numpy import arange
 from numpy import setdiff1d
 from numpy import int as npint
@@ -200,7 +200,7 @@ class FBCSPrLDAExperiment(object):
             ]
         elif self.load_fold_from_file is True:
             # in case of pre-batched computation
-            self.folds = load(self.fold_file)['folds']
+            self.folds = np.load(self.fold_file)['folds']
         else:
             # getting pseudo-random folds
             folds = get_balanced_batches(
