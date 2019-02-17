@@ -10,6 +10,7 @@ SET HERE YOUR PARAMETERS
 """
 train_trials_list = [4, 8, 16, 32, 64, 128]
 reference = 1  # 0 for ML cross, 1 for DL cross, 2 for TL4 ecc.
+p_flag = False  # if true, it will print p value too.
 
 """
 GETTING PATHS
@@ -91,11 +92,8 @@ GENERAL FORMATTING
 """
 n_subjs = len(subj_data[0])
 columns = [['subj'] + list(map(str, range(1, n_subjs + 1))) +
-           ['mean', 'std', '$\\Delta$\\%', '$p_{\\%}$']]
-header = [
-    'CS ML', 'CS DL',
-    'TL 4', 'TL 8', 'TL 16', 'TL 32', 'TL 64', 'TL 128'
-]
+           ['mean', 'std', '$\\Delta_{\\textbf{\\%}}$', '$p$']]
+header = ['ML', 'DL', '4', '8', '16', '32', '64', '128']
 for idx, head in enumerate(header):
     temp = [check_significant_digits(str(subj_data[idx][x]))
             for x in range(n_subjs)]
@@ -108,3 +106,50 @@ for idx, head in enumerate(header):
         [str(check_significant_digits(pval_data[idx]))]
     )
 rows = list(map(list, zip(*columns)))
+if p_flag is False:
+    rows.pop()
+
+"""
+CREATING LATEX TABULAR CODE
+"""
+# pre-allocating output
+output = ''
+
+# opening table
+output += '\\begin{table}[H]\n\\footnotesize\n\\centering\n'
+output += '\\begin{tabular}{|c|M{1.4cm}M{1.4cm}|'
+output += 'c' * len(train_trials_list) + '|}\n'
+output += '\\hline\n&\multicolumn{2}{c|}{\\textbf{cross-soggetto}}\n'
+output += '&\multicolumn{' + str(len(train_trials_list)) + '}{c|}'
+output += '{\\textbf{transfer learning}}\n\\\\\n'
+
+# first row is an header
+for idx, col in enumerate(rows[0]):
+    if idx == 0:
+        output += '\\textbf{' + col + '}\n'
+    else:
+        output += '&\\textbf{' + col + '}\n'
+output += '\\\\\n\\hline\n\\hline\n'
+
+# creating iterator and jumping the first element (header)
+iterator = iter(rows)
+next(iterator)
+
+for idx, row in enumerate(iterator):
+    if idx % 2 == 0:
+        output += '\\rowcolor[gray]{.9}\n'
+    else:
+        output += '\\rowcolor[gray]{.8}\n'
+    for idy, col in enumerate(row):
+        if idy == 0:
+            output += '\\textbf{' + col + '}\n'
+        else:
+            output += '&' + col + '\n'
+    output += '\\\\\n'
+    if idx == n_subjs - 1:
+        output += '\\hline\n\\hline\n'
+
+output += '\\hline\n\\end{tabular}'
+output += '\n\\caption{tl table}\n\\label{tl table}\n'
+output += '\\end{table}'
+print(output)

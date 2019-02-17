@@ -322,6 +322,11 @@ def get_metrics_from_conf_mtx(conf_mtx, label_names=None):
 
 def check_significant_digits(num):
     num = float(num)
+    if num < 0:
+        negative_flag = True
+        num = -num
+    else:
+        negative_flag = False
     if num < 0.01:  # from 0.009999
         num = np.round(num, 5)
     elif num < 0.1:  # from 0.09999
@@ -346,6 +351,8 @@ def check_significant_digits(num):
     else:
         num = np.round(num, 1)
         num = str(num)
+    if negative_flag:
+        num = '-' + num
     return num
 
 
