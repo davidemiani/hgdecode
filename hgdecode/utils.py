@@ -7,6 +7,7 @@ from os import getcwd
 from os import system
 from os import listdir
 from os import makedirs
+from os import remove
 from sys import platform
 from pickle import dump
 from os.path import join
@@ -442,3 +443,9 @@ def get_path(results_dir=None,
         folder_path = join(folder_path, 'train_size_' + str(n_folds))
 
     return join(folder_path, listdir2(folder_path)[0])
+
+
+def clear_all_models(subj_results_dir):
+    fold_folders = listdir2(subj_results_dir)
+    for fold_folder in fold_folders:
+        remove(join(subj_results_dir, fold_folder, 'net_best_val_loss.h5'))

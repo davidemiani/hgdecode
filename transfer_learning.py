@@ -7,6 +7,7 @@ from numpy.random import RandomState
 from hgdecode.utils import get_path
 from hgdecode.utils import create_log
 from hgdecode.utils import print_manager
+from hgdecode.utils import clear_all_models
 from hgdecode.loaders import dl_loader
 from hgdecode.classes import CrossValidation
 from hgdecode.experiments import DLExperiment
@@ -206,3 +207,6 @@ for subject_id in subject_ids:
         cross_validation.cross_validate(
             subj_results_dir=exp.subj_results_dir,
             label_names=name_to_start_codes)
+
+    # clearing all models (they are not useful once we have results)
+    clear_all_models(subj_results_dir)
