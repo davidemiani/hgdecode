@@ -765,8 +765,8 @@ class CrossValidation(object):
         # computing n_folds and fold_size
         if fold_size is None:
             if n_folds is None:
-                raise ValueError('You have to specify at least one of this '
-                                 'two inputs: fold_size, n_folds.')
+                self.n_folds = 0
+                self.fold_size = 0
             else:
                 self.n_folds = n_folds
                 self.fold_size = int(floor(self.n_trials / self.n_folds))
@@ -788,10 +788,13 @@ class CrossValidation(object):
             self.validation_frac = self.validation_size / self.n_trials
 
         # creating folds
-        if self.balanced_folds is True:
-            self._create_balanced_folds()
+        if self.fold_size == 0:
+            self.folds = []
         else:
-            self._create_robintibor_balanced_folds()
+            if self.balanced_folds is True:
+                self._create_balanced_folds()
+            else:
+                self._create_robintibor_balanced_folds()
 
     def _create_balanced_folds(self):
         """

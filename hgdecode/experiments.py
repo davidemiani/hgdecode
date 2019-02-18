@@ -201,6 +201,21 @@ class FBCSPrLDAExperiment(object):
         elif self.load_fold_from_file is True:
             # in case of pre-batched computation
             self.folds = np.load(self.fold_file)['folds']
+        elif self.n_folds == 0:
+            self.n_folds = 1
+
+            # creating schirrmeister fold
+            all_idxs = np.array(range(len(self.clean_trial_mask)))
+            self.folds = [
+                {
+                    'train': all_idxs[:-160],
+                    'test': all_idxs[-160:]
+                }
+            ]
+            self.folds[0]['train'] = self.folds[0]['train'][
+                self.clean_trial_mask[:-160]]
+            self.folds[0]['test'] = self.folds[0]['test'][
+                self.clean_trial_mask[-160:]]
         else:
             # getting pseudo-random folds
             folds = get_balanced_batches(

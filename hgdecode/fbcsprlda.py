@@ -105,8 +105,9 @@ class BinaryFBCSP(object):
             )
 
             # cleaning epoched data with clean_trial_mask (finally)
-            epo.X = epo.X[self.clean_trial_mask]
-            epo.y = epo.y[self.clean_trial_mask]
+            if len(self.folds) != 1:
+                epo.X = epo.X[self.clean_trial_mask]
+                epo.y = epo.y[self.clean_trial_mask]
 
             # %% CYCLING ON FOLDS
             # %%
