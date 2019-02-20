@@ -261,7 +261,7 @@ def dl_loader(data_dir,
               epoch_ival_ms=(-500, 4000),
               train_test_split=True,
               clean_on_all_channels=True,
-              standardize_mode=None):
+              standardize_mode=0):
     # loading and pre-processing data
     cnt, clean_trial_mask = load_and_preprocess_data(
         data_dir=data_dir,

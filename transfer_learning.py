@@ -51,16 +51,16 @@ random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 4  # must be integer
+fold_size = 128  # must be integer
 validation_frac = 0.1
 
 # setting frozen_layers
-layers_to_freeze = 0
+layers_to_freeze = -6  # can be between -6 and 6 for DeepConvNet
 
 # other hyper-parameters
 dropout_rate = 0.6
 learning_rate = 2 * 1e-5
-epochs = 100
+epochs = 200
 
 """
 GETTING CROSS-SUBJECT MODELS DIR PATH

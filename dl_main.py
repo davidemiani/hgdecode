@@ -65,8 +65,14 @@ random_state = RandomState(1234)
 # real useful hyperparameters
 standardize_mode = 2
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-ival = (-500, 4000)
-n_folds = 10
+ival = (-1000, 1000)
+n_folds = 12
+fold_size = None
+swap_train_test = False
+learning_rate = 1e-4
+dropout_rate = 0.5
+batch_size = 64
+epochs = 1000
 
 """
 MAIN CYCLE
@@ -105,10 +111,14 @@ for subject_id in subject_ids:
         X=epo.X,
         y=epo.y,
         n_folds=n_folds,
+        fold_size=fold_size,
         validation_frac=0.1,
         random_state=random_state,
-        shuffle=True
+        shuffle=True,
+        swap_train_test=swap_train_test
     )
+    if n_folds is None:
+        cv.balance_train_set(train_size=fold_size)
 
     # pre-allocating experiment
     exp = None
@@ -143,10 +153,10 @@ for subject_id in subject_ids:
             fold_idx=fold_idx,
 
             # hyperparameters
-            dropout_rate=0.5,  # Schirrmeister: 0.5
-            learning_rate=1 * 1e-4,  # Schirrmeister: ?
-            batch_size=32,  # Schirrmeister: 512
-            epochs=1000,  # Schirrmeister: ?
+            dropout_rate=dropout_rate,  # Schirrmeister: 0.5
+            learning_rate=learning_rate,  # Schirrmeister: ?
+            batch_size=batch_size,  # Schirrmeister: 512
+            epochs=epochs,  # Schirrmeister: ?
             early_stopping=False,  # Schirrmeister: ?
             monitor='val_acc',  # Schirrmeister: ?
             min_delta=0.0001,  # Schirrmeister: ?

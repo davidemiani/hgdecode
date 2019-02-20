@@ -383,7 +383,7 @@ class DLExperiment(object):
         print_manager('IMPORTING & COMPILING MODEL', 'double-dashed')
         model_inputs_str = ', '.join([str(i) for i in [self.n_classes,
                                                        self.n_channels,
-                                                       self.n_samples,
+                                                       self.crop_sample_size,
                                                        self.dropout_rate]])
         expression = 'models.' + self.model_name + '(' + model_inputs_str + ')'
         self.model = eval(expression)
@@ -685,17 +685,26 @@ class DLExperiment(object):
 
     def freeze_layers(self, layers_to_freeze):
         print_manager('FREEZING LAYERS', 'double-dashed')
-        if layers_to_freeze is 0:
+        if layers_to_freeze == 0:
             print('NOTHING TO FREEZE!!')
         else:
             print("I'm gonna gonna freeze {} layers.".format(layers_to_freeze))
+
             # freezing layers
+            frozen = 0
             if layers_to_freeze > 0:
-                for layer in self.model.layers[:layers_to_freeze]:
-                    layer.trainable = False
+                idx = 0
+                step = 1
             else:
-                for layer in self.model.layers[layers_to_freeze:]:
+                idx = -1
+                step = -1
+                layers_to_freeze = - layers_to_freeze
+            while frozen < layers_to_freeze:
+                layer = self.model.layers[idx]
+                if layer.name[:4] == 'conv' or layer.name[:5] == 'dense':
                     layer.trainable = False
+                    frozen += 1
+                idx += step
 
             # creating optimizer instance
             if self.optimizer is 'Adam':
