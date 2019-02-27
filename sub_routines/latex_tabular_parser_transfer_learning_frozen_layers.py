@@ -9,25 +9,32 @@ from hgdecode.utils import check_significant_digits
 SET HERE YOUR PARAMETERS
 """
 ival = (-500, 4000)
-train_trials_list = [4, 8, 16, 32, 64, 128]
-reference = 1  # 0 for ML cross, 1 for DL cross, 2 for TL4 ecc.
+frozen_layers_list = [1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 6]
+reference = 0  # 0 for ML cross, 1 for DL cross, 2 for TL4 ecc.
 p_flag = False  # if true, it will print p value too.
 
 """
 GETTING PATHS
 """
-folder_paths = [
-    get_path(
-        results_dir=None,
-        learning_type=x,
-        algorithm_or_model_name=y,
-        epoching=ival,
-        fold_type='cross_subject',
-        n_folds=None,
-        deprecated=False
-    )
-    for x, y in zip(['ml', 'dl'], ['FBCSP_rLDA', 'DeepConvNet'])
-]
+folder_paths = [get_path(
+    results_dir=None,
+    learning_type='dl',
+    algorithm_or_model_name=None,
+    epoching=ival,
+    fold_type='cross_subject',
+    n_folds=None,
+    deprecated=False
+)]
+
+folder_paths += [get_path(
+    results_dir=None,
+    learning_type='dl',
+    algorithm_or_model_name=None,
+    epoching=ival,
+    fold_type='transfer_learning',
+    n_folds=128,
+    deprecated=False
+)]
 
 folder_paths += [
     get_path(
@@ -35,11 +42,11 @@ folder_paths += [
         learning_type='dl',
         algorithm_or_model_name='DeepConvNet',
         epoching=ival,
-        fold_type='transfer_learning',
+        fold_type='transfer_learning_frozen',
         n_folds=x,
         deprecated=False
     )
-    for x in train_trials_list
+    for x in frozen_layers_list
 ]
 
 # getting file_path
@@ -62,7 +69,7 @@ for idx, csv_path in enumerate(csv_paths):
         list(map(float, csv[x]))
         for x in range(len(csv))
     ]
-    if idx < 2:
+    if idx < 1:
         subj_data.append(csv[0][:-2])
         mean_data.append(csv[0][-2])
         stdd_data.append(csv[0][-1])
@@ -94,7 +101,7 @@ GENERAL FORMATTING
 n_subjs = len(subj_data[0])
 columns = [['subj'] + list(map(str, range(1, n_subjs + 1))) +
            ['mean', 'std', '$\\Delta_{\\textbf{\\%}}$', '$p$']]
-header = ['ML', 'DL', '4', '8', '16', '32', '64', '128']
+header = ['CL', '0'] + list(map(str, frozen_layers_list))
 for idx, head in enumerate(header):
     temp = [check_significant_digits(str(subj_data[idx][x]))
             for x in range(n_subjs)]
@@ -118,11 +125,11 @@ output = ''
 
 # opening table
 output += '\\begin{table}[H]\n\\footnotesize\n\\centering\n'
-output += '\\begin{tabular}{|c|M{1.4cm}M{1.4cm}|'
-output += 'c' * len(train_trials_list) + '|}\n'
-output += '\\hline\n&\multicolumn{2}{c|}{\\textbf{cross-soggetto}}\n'
-output += '&\multicolumn{' + str(len(train_trials_list)) + '}{c|}'
-output += '{\\textbf{transfer learning}}\n\\\\\n'
+output += '\\begin{tabular}{|c|cc|'
+output += 'c' * len(frozen_layers_list) + '|}\n'
+output += '\\hline\n&&\n'
+output += '&\multicolumn{' + str(len(frozen_layers_list)) + '}{c|}'
+output += '{\\textbf{transfer learning con strati congelati}}\n\\\\\n'
 
 # first row is an header
 for idx, col in enumerate(rows[0]):

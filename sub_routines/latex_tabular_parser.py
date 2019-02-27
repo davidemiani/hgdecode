@@ -10,10 +10,11 @@ SET HERE YOUR PARAMETERS
 results_dir = None
 learning_type = 'dl'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = '-1500_500'
 fold_type = 'single_subject'
 n_folds = 12
-deprecated = False
+deprecated = True
+balanced_fold = True
 
 # metrics parameter
 label = 'Feet'  # Feet, LeftHand, Rest or RightHand
@@ -31,7 +32,8 @@ folder_path = get_path(
     epoching=epoching,
     fold_type=fold_type,
     n_folds=n_folds,
-    deprecated=deprecated
+    deprecated=deprecated,
+    balanced_folds=balanced_fold
 )
 
 # getting file_path

@@ -378,7 +378,8 @@ def get_path(results_dir=None,
              epoching=(-500, 4000),
              fold_type='single_subject',
              n_folds=2,
-             deprecated=False):
+             deprecated=False,
+             balanced_folds=True):
     # checking results_dir
     if results_dir is None:
         results_dir = join(dirname(dirname(dirname(getcwd()))), 'results')
@@ -422,15 +423,22 @@ def get_path(results_dir=None,
             folder += '6'
     elif fold_type == 'transfer_learning':
         folder += '7'
+    elif fold_type == 'transfer_learning_frozen':
+        folder += '8'
     else:
         raise ValueError(
             'Invalid fold_type: {}'.format(fold_type)
         )
     folder += '_' + fold_type + '_' + epoching_str
 
+    # checking for deprecated / not stratified
     if deprecated is True:
-        folder = join('0_deprecated', folder)
+        if balanced_folds is True:
+            folder = join('0_deprecated', folder)
+        else:
+            folder = join('0_deprecated', '#_not_stratified', folder)
 
+    # building folder path
     folder_path = join(results_dir,
                        'hgdecode',
                        learning_type,
@@ -441,6 +449,9 @@ def get_path(results_dir=None,
         folder_path = join(folder_path, my_formatter(n_folds, 'fold'))
     elif fold_type == 'transfer_learning':
         folder_path = join(folder_path, 'train_size_' + str(n_folds))
+    elif fold_type == 'transfer_learning_frozen':
+        folder_path = join(folder_path, 'frozen_' + str(n_folds),
+                           'train_size_128')
 
     return join(folder_path, listdir2(folder_path)[0])
 
