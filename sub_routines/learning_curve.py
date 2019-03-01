@@ -14,12 +14,16 @@ SET HERE YOUR PARAMETERS
 """
 # to find file parameters
 results_dir = None
-learning_type = 'ml'
+learning_type = 'dl'
 algorithm_or_model_name = None
 epoching = '-500_4000'
 fold_type = 'single_subject'
 n_folds_list = [2, 4, 6, 8, 10, 12]  # must be a list of integer
 deprecated = False
+
+fontsize_1 = 35
+fontsize_2 = 27.5
+fig_size = (22, 7.5)
 
 """
 GETTING PATHS
@@ -171,27 +175,32 @@ m_acc = np.mean(np.array(results['m_acc']), axis=0)
 s_acc = np.mean(np.array(results['s_acc']), axis=0)
 
 # plotting learning curve for total mean
-plot_path = join(savings_dir, 'total_mean')
+plot_path = join(savings_dir, learning_type + '_learning_curve')
 if learning_type is 'dl':
-    title = '{} learning curve\n({}$\pm${} samples, {}$\pm${} validation ' \
-            'samples)'.format('average', m_n_trials, s_n_trials,
-                              m_n_valid_trials[0], s_n_valid_trials[0])
+    # title = '{} learning curve\n({}$\pm${} samples, {}$\pm${} validation ' \
+    #         'samples)'.format('average', m_n_trials, s_n_trials,
+    #                           m_n_valid_trials[0], s_n_valid_trials[0])
+    title = 'totale esempi per soggetto: {}$\pm${}; esempi di validazione: ' \
+            '{}$\pm${}'.format(m_n_trials, s_n_trials,
+                               m_n_valid_trials[0], s_n_valid_trials[0])
 else:
-    title = '{} learning curve\n({}$\pm${} samples)'.format(
-        'average', m_n_trials, s_n_trials)
-x_tick_labels = ['{}$\pm${}\n({} folds)'.format(
+    # title = '{} learning curve\n({}$\pm${} samples)'.format(
+    #    'average', m_n_trials, s_n_trials)
+    title = 'totale esempi per soggetto: {}$\pm${}'.format(
+        m_n_trials, s_n_trials)
+x_tick_labels = ['{}$\pm${}\n({} fold)'.format(
     m_n_train_trials[idx], s_n_train_trials[idx], n_folds_list[idx])
     for idx in range(n_trainings)]
-plt.figure(dpi=100, figsize=(12.8, 7.2), facecolor='w', edgecolor='k')
+plt.figure(dpi=100, figsize=fig_size, facecolor='w', edgecolor='k')
 plt.style.use('seaborn-whitegrid')
 plt.errorbar(x=n_folds_list, y=m_acc, yerr=s_acc,
              fmt='-.o', color='b', ecolor='r',
              linewidth=2, elinewidth=3, capsize=20, capthick=2)
-plt.xlabel('training samples', fontsize=25)
-plt.ylabel('accuracy (%)', fontsize=25)
-plt.xticks(n_folds_list, labels=x_tick_labels, fontsize=20)
-plt.yticks(fontsize=20)
-plt.title(title, fontsize=25)
+plt.xlabel('esempi di training', fontsize=fontsize_1)
+plt.ylabel('accuratezza (%)', fontsize=fontsize_1)
+plt.xticks(n_folds_list, labels=x_tick_labels, fontsize=fontsize_2)
+plt.yticks(fontsize=fontsize_2)
+plt.title(title, fontsize=fontsize_1)
 
 # in case of single_subject, -500,4000
 if fold_type is 'single_subject':

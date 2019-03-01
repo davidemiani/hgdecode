@@ -8,7 +8,7 @@ from hgdecode.utils import check_significant_digits
 """
 SET HERE YOUR PARAMETERS
 """
-ival = (-500, 4000)
+ival = (-1000, 1000)
 train_trials_list = [4, 8, 16, 32, 64, 128]
 reference = 1  # 0 for ML cross, 1 for DL cross, 2 for TL4 ecc.
 p_flag = False  # if true, it will print p value too.

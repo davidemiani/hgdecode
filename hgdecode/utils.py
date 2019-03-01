@@ -422,9 +422,12 @@ def get_path(results_dir=None,
         elif epoching_str == '-1000_1000':
             folder += '6'
     elif fold_type == 'transfer_learning':
-        folder += '7'
+        if epoching_str == '-500_4000':
+            folder += '7'
+        else:
+            folder += '8'
     elif fold_type == 'transfer_learning_frozen':
-        folder += '8'
+        folder += '9'
     else:
         raise ValueError(
             'Invalid fold_type: {}'.format(fold_type)

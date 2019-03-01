@@ -9,7 +9,7 @@ from hgdecode.utils import check_significant_digits
 SET HERE YOUR PARAMETERS
 """
 ival = (-500, 4000)
-frozen_layers_list = [1, 2, 3, 4, 5, -1, -2, -3, -4, -5, 6]
+frozen_layers_list = [1, 2, 3, 4, 5, 6, -5, -4, -3, -2, -1]
 reference = 0  # 0 for ML cross, 1 for DL cross, 2 for TL4 ecc.
 p_flag = False  # if true, it will print p value too.
 
