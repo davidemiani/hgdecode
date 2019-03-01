@@ -61,10 +61,10 @@ name_to_start_codes = OrderedDict([('Right Hand', [1]),
 random_state = RandomState(1234)
 
 # real useful hyperparameters
-standardize_mode = 2
+standardize_mode = 0
 subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
 ival = (-500, 4000)
-n_folds = 24
+n_folds = 6
 
 # fold stuff
 ival_str = str(ival[0]) + '_' + str(ival[1])
