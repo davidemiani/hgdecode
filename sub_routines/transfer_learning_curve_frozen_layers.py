@@ -95,7 +95,7 @@ plt.errorbar(x=[0, 1, 2, 3, 4, 5, 6],
              yerr=pos_layers_s,
              fmt='-.o', color='b', ecolor='r',
              linewidth=2, elinewidth=3, capsize=20, capthick=2)
-plt.xlabel('indice di congelamento (da nessuno strato congelato a tutti)',
+plt.xlabel('indice di congelamento',
            fontsize=fontsize_1)
 plt.ylabel('accuratezza (%)', fontsize=fontsize_1)
 plt.xticks(fontsize=fontsize_2)
@@ -114,7 +114,7 @@ plt.errorbar(x=[0, -1, -2, -3, -4, -5, -6],
              yerr=neg_layers_s,
              fmt='-.o', color='b', ecolor='r',
              linewidth=2, elinewidth=3, capsize=20, capthick=2)
-plt.xlabel('indice di congelamento (da tutti gli strati congelati a nessuno)',
+plt.xlabel('indice di congelamento',
            fontsize=fontsize_1)
 plt.ylabel('accuratezza (%)', fontsize=fontsize_1)
 plt.xticks(fontsize=fontsize_2)

@@ -10,7 +10,7 @@ TRAINING 1
 results_dir = None
 learning_type = 'dl'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = '-1000_1000'
 fold_type_1 = 'single_subject'
 n_folds_list = [12]  # must be a list of integer
 deprecated = False
@@ -33,9 +33,9 @@ folder_paths_1 = [
 TRAINING 2
 """
 results_dir = None
-learning_type = 'dl'
+learning_type = 'ml'
 algorithm_or_model_name = None
-epoching = '-1000_1000'
+epoching = '-500_4000'
 fold_type_2 = 'single_subject'
 n_folds_list = [12]  # must be a list of integer
 deprecated = False
@@ -84,4 +84,4 @@ for training_1, training_2 in zip(folder_paths_1, folder_paths_2):
 
     # running t-test
     statistic, p_value = ttest_rel(training_1_accs, training_2_accs)
-    print(p_value * 100)
+    print(p_value)
