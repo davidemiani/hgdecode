@@ -64,8 +64,8 @@ random_state = RandomState(1234)
 
 # real useful hyperparameters
 standardize_mode = 2
-subject_ids = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
-ival = (-1000, 1000)
+subject_ids = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)
+ival = (-500, 4000)
 n_folds = 12
 fold_size = None
 swap_train_test = False

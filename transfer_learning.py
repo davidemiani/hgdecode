@@ -51,16 +51,17 @@ random_state = RandomState(1234)
 
 # setting fold_size: this will be the number of trials for training,
 # so it must be multiple of 4
-fold_size = 128  # must be integer
+fold_size = 8  # must be integer
 validation_frac = 0.1
 
 # setting frozen_layers
-layers_to_freeze = -6  # can be between -6 and 6 for DeepConvNet
+layers_to_freeze = 0  # can be between -6 and 6 for DeepConvNet
 
 # other hyper-parameters
 dropout_rate = 0.6
 learning_rate = 2 * 1e-5
-epochs = 200
+epochs = 100
+ival = (-1000, 1000)
 
 """
 GETTING CROSS-SUBJECT MODELS DIR PATH
@@ -69,7 +70,7 @@ GETTING CROSS-SUBJECT MODELS DIR PATH
 # setting cross_subj_dir_path: data from cross-subj computation are stored here
 learning_type = 'dl'
 algorithm_or_model_name = None
-epoching = '-500_4000'
+epoching = ival
 fold_type = 'cross_subject'
 n_folds = None
 deprecated = False
@@ -105,8 +106,8 @@ for subject_id in subject_ids:
         channel_names=channel_names,
         subject_id=subject_id,
         resampling_freq=250,  # Schirrmeister: 250
-        clean_ival_ms=(-500, 4000),  # Schirrmeister: (0, 4000)
-        epoch_ival_ms=(-500, 4000),  # Schirrmeister: (-500, 4000)
+        clean_ival_ms=ival,  # Schirrmeister: (0, 4000)
+        epoch_ival_ms=ival,  # Schirrmeister: (-500, 4000)
         train_test_split=True,  # Schirrmeister: True
         clean_on_all_channels=False  # Schirrmeister: True
     )
